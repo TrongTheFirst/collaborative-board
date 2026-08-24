@@ -25,15 +25,15 @@ public class UserService implements UserDetailsService {
     public Result<User> create(User user) throws DataAccessException {
         Result<User> result = new Result<>();
 
-        if (user.getEmail().isBlank()) {
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
             result.addErrorMessage("Email cannot be blank", ResultType.INVALID);
         }
 
-        if (user.getPassword().isBlank()) {
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
             result.addErrorMessage("Password cannot be blank", ResultType.INVALID);
         }
 
-        if(user.getDisplayName().isBlank()) {
+        if(user.getDisplayName() == null || user.getDisplayName().isBlank()) {
             result.addErrorMessage("Display name cannot be blank", ResultType.INVALID);
         }
 
