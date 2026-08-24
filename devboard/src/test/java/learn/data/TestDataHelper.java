@@ -1,12 +1,20 @@
-package learn.data.repository;
+package learn.data;
 
 import learn.models.User;
+import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+
 public class TestDataHelper {
+
+
     public static User existingUser() {
-        return new User(1, "a@a.com", "pass", "a", testTime);
+        return new User(1, "a@a.com", "encoded-password", "a", testTime);
     }
 
     public static User userToCreate() {

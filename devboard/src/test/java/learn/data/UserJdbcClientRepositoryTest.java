@@ -1,6 +1,5 @@
-package learn.data.repository;
+package learn.data;
 
-import learn.data.DataAccessException;
 import learn.models.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,5 +34,19 @@ class UserJdbcClientRepositoryTest {
         User actual = repository.findByEmail("does@not.exist");
 
         assertNull(actual);
+    }
+
+    @Test
+    void shouldCreate() throws DataAccessException {
+        User toCreate = TestDataHelper.userToCreate();
+        User expected = TestDataHelper.userToCreate();
+        expected.setId(3);
+
+        assertNull(repository.findByEmail(toCreate.getEmail()));
+
+        User actual = repository.create(toCreate);
+
+        assertEquals(expected, actual);
+        assertNotNull(repository.findByEmail(toCreate.getEmail()));
     }
 }
