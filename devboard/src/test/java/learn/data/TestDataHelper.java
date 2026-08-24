@@ -14,7 +14,7 @@ public class TestDataHelper {
 
 
     public static User existingUser() {
-        return new User(1, "a@a.com", "encoded-password", "a", testTime);
+        return new User(1, "a@email.com", "encoded-password", "a", testTime);
     }
 
     public static User userToCreate() {

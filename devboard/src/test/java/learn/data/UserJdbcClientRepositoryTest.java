@@ -24,7 +24,7 @@ class UserJdbcClientRepositoryTest {
 
     @Test
     void findByEmailHappyPath() throws DataAccessException {
-        User actual = repository.findByEmail("a@a.com");
+        User actual = repository.findByEmail("a@email.com");
 
         assertEquals(TestDataHelper.existingUser(), actual);
     }
