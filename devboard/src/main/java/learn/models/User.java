@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode
 @AllArgsConstructor
 @NoArgsConstructor
-public class Users {
+public class User {
     private long id;
     private String email;
     private String password;
