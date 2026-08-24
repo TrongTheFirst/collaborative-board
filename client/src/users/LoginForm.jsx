@@ -74,7 +74,7 @@ export default function LoginForm({isLogin}) {
                     />
                 </div>
 
-                <div>
+                {!isLogin && <div>
                     <label htmlFor="displayName" className="block text-sm font-medium text-slate-700 mb-1">
                         Display Name
                     </label>
@@ -88,7 +88,7 @@ export default function LoginForm({isLogin}) {
                         required
                         className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500"
                     />
-                </div>
+                </div>}
 
                 <div>
                     <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
