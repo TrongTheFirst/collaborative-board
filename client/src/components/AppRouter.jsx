@@ -2,11 +2,12 @@ import Layout from "./Layout.jsx";
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import LoginForm from "../users/LoginForm.jsx";
 import NotFound from "./NotFound.jsx";
+import Board from "../canvas/Board.jsx";
 
 function AppRouter(){
     const routes = [{
         path: "",
-        element: <Layout />,
+        element: <Board />,
         errorElement: <div>Something went wrong on our side</div>,
         children: [
             {

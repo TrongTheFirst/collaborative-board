@@ -1,41 +1,100 @@
 import {useRef, useEffect, useState} from 'react'
 import rough from "roughjs/bin/rough";
+import Toolbar from "./Toolbar.jsx";
 
 function Board(){
     const canvasRef = useRef(null);
+    const [drawings, setDrawings] = useState(() => localStorage.getItem("drawings"));
+    // const [zoom, setZoom] = useState(1);
+    // const initialRatioRef = useRef(window.devicePixelRatio || 1);
 
+    let isDrawing = false;
+    let points = [];
     useEffect(() => {
         const canvas = canvasRef.current;
         const rc = rough.canvas(canvas);
 
-        rc.rectangle(50, 50, 200, 100, {
-            stroke: "#000",
-            strokeWidth: 2,
-            fill: "#fef08a",
-            fillStyle: "solid",
-            roughness: 2,
+        const resize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        resize();
+
+
+        const getPoint = (e) => ({
+            x: e.clientX,
+            y: e.clientY,
         });
 
-        rc.circle(350, 100, 100, {
-            stroke: "#2563eb",
-            strokeWidth: 3,
-            fill: "#bfdbfe",
-            fillStyle: "hachure",
-        });
+        const handlePointerDown = (e) => {
+            isDrawing = true;
+            points = [getPoint(e)];
+        };
 
-        rc.line(50, 200, 400, 200, {
-            stroke: "#ef4444",
-            strokeWidth: 3,
-        });
+        const handlePointerMove = (e) => {
+            if (!isDrawing) return;
+
+            points.push(getPoint(e));
+
+            // Draw the current stroke
+            draw();
+
+        };
+
+        const draw = () => {
+            const drawings = JSON.parse(localStorage.getItem("drawings")) ?? [];
+
+            if (points.length > 1) {
+                rc.curve(
+                    points.map((p) => [p.x, p.y]),
+                    {
+                        stroke: "black",
+                        strokeWidth: 1,
+                        roughness: 1,
+                        strokeStyle:"solid"
+                    }
+                );
+            }
+        }
+
+
+        const handlePointerUp = () => {
+            if(!isDrawing) return;
+            isDrawing = false;
+            const drawing = {
+                id: crypto.randomUUID(),
+                type: "freehand",
+                points,
+                strokeColor: "#000000",
+                strokeWidth: 2
+            }
+            const drawings = JSON.parse(localStorage.getItem("drawings")) ?? [];
+            drawings.push(drawing);
+            localStorage.setItem("drawings", JSON.stringify(drawings));
+            points = [];
+        };
+
+        window.addEventListener("resize", resize);
+        canvas.addEventListener("pointerdown", handlePointerDown);
+        canvas.addEventListener("pointermove", handlePointerMove);
+        canvas.addEventListener("pointerup", handlePointerUp);
+        canvas.addEventListener("pointerleave", handlePointerUp);
+
+        return () => {
+            window.removeEventListener("resize", resize);
+
+            canvas.removeEventListener("pointerdown", handlePointerDown);
+            canvas.removeEventListener("pointermove", handlePointerMove);
+            canvas.removeEventListener("pointerup", handlePointerUp);
+            canvas.removeEventListener("pointerleave", handlePointerUp);
+        };
     }, []);
 
-    return (
-        <canvas
-            ref={canvasRef}
-            width={600}
-            height={400}
-            className="border"
-        />
+    return(
+        <>
+            <Toolbar />
+            <canvas ref={canvasRef} className="fixed z-0 inset-0 w-screen h-screen"  />
+        </>
     );
 }
 
