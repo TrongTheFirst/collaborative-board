@@ -2,9 +2,16 @@ import {useRef, useEffect, useState} from 'react'
 import rough from "roughjs/bin/rough";
 import Toolbar from "./Toolbar.jsx";
 import OptionsBar from "./OptionsBar.jsx";
+import { useSession} from "../contexts/SesssionContext.jsx";
+import CollabModal from "../components/CollabModal.jsx";
+import LoginModal from "../users/LoginModal.jsx"
+import CreateModal from "../users/CreateModal.jsx"
 
 function Board(){
-
+    const [openCollabModal, setOpenCollabModal] = useState(false);
+    const [openLoginModal, setOpenLoginModal] = useState(false);
+    const [openCreateModal, setOpenCreateModal] = useState(false);
+    const {sendMessage, sessionConnected, boardId} = useSession();
     const canvasRef = useRef(null);
     const [drawings, setDrawings] = useState(() => JSON.parse(localStorage.getItem("drawings")) ?? []);
 
@@ -113,7 +120,21 @@ function Board(){
                     localStorage.setItem("drawings", JSON.stringify(newDrawings));
                     return newDrawings;
                 });
-
+                // if(sessionConnected){
+                    const {type, ...element_data} = drawing;
+                    const boardElement = {
+                        element_id: 1,
+                        board_id: boardId,
+                        type,
+                        element_data: element_data
+                    }
+                    console.log(element_data);
+                    const message = {
+                        sender: "test",
+                        boardElement
+                    }
+                    sendMessage(message,1);
+                // }
             }
         }
 
@@ -129,6 +150,7 @@ function Board(){
             canvas.removeEventListener("pointerdown", handlePointerDown);
             canvas.removeEventListener("pointermove", handlePointerMove);
             canvas.removeEventListener("pointerup", handlePointerUp);
+
         };
     }, []);
 
@@ -136,10 +158,13 @@ function Board(){
         <>
             <div className="flex justify-end">
                 <Toolbar setDrawings={setDrawings} clearCanvas={clearCanvas} />
-                <OptionsBar setDrawings={setDrawings} clearCanvas={clearCanvas} />
+                <OptionsBar setOpenCollabModal={setOpenCollabModal} setOpenLoginModal={setOpenLoginModal}/>
             </div>
 
             <canvas ref={canvasRef} className="fixed z-0 inset-0 w-screen h-screen"  />
+            {openCollabModal && <CollabModal setOpenCollabModal={setOpenCollabModal}/>}
+            {openLoginModal && <LoginModal setOpenLoginModal={setOpenLoginModal} setOpenCreateModal={setOpenCreateModal}/>}
+            {openCreateModal && <CreateModal setOpenLoginModal={setOpenLoginModal} setOpenCreateModal={setOpenCreateModal}/>}
         </>
     );
 }

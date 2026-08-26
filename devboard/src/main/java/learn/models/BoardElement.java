@@ -16,6 +16,4 @@ public class BoardElement {
     private long board_id;
     private String type;
     private JsonNode element_data;
-    
-
 }
