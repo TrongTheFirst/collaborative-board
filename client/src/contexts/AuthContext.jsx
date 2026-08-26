@@ -1,6 +1,6 @@
 import {createContext, useCallback, useContext, useState} from "react";
 
-export const AuthContext = createContext(null);
+const AuthContext = createContext(null);
 
 const BASE_URL = "http://localhost:8080/api"
 export function AuthProvider({ children }) {
@@ -9,7 +9,8 @@ export function AuthProvider({ children }) {
     const parsedToken = token ? JSON.parse(atob(token.split(".")[1])) : null;
 
     const email = parsedToken ? parsedToken.email : "";
-    const UUID = parsedToken ? parsedToken.sub : null;
+    const userId = parsedToken ? parsedToken.sub : null;
+    const displayName = parsedToken ? parsedToken.displayName : null;
 
 
     const login = (newToken) => {
@@ -28,7 +29,8 @@ export function AuthProvider({ children }) {
             value={{
                 token,
                 email,
-                UUID,
+                userId,
+                displayName,
                 BASE_URL,
                 isLoggedIn: !!token,
                 login,

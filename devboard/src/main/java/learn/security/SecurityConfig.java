@@ -39,6 +39,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth//determines who is allowed access to which URLs
                         .requestMatchers("/api/user/**").permitAll()//allows access to account creation and login
+                        .requestMatchers("/ws/**").permitAll()//TODO temporary
                         .anyRequest().authenticated())//every other request requires authentication
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)//apply jwt token verification
                 .build();

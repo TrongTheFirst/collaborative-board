@@ -1,13 +1,12 @@
 import { Outlet } from "react-router-dom"
+import Board from "../canvas/Board";
 
 function Layout()  {
     return (
         <div className='container'>
-            <header className='mb-3'>
-                Hello
-            </header>
             <main>
                 <Outlet />
+                <Board />
             </main>
         </div>
     )
