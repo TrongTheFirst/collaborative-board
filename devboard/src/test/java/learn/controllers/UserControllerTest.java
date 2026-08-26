@@ -57,7 +57,8 @@ public class UserControllerTest {
         mockMvc.perform(post("/api/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(user)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().json("[\"Email is already taken\"]"));
     }
 
     @Test

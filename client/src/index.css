@@ -1,1 +1,17 @@
 @import "tailwindcss";
+
+.primary-button{
+    @apply rounded-lg border border-blue-400/40 bg-blue-500
+    text-xs font-bold tracking-[0.15em] text-[#06121c]
+    shadow-lg shadow-blue-500/10 transition
+    hover:bg-blue-400 hover:shadow-blue-400/20
+}
+
+.art-button{
+    @apply flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-300
+}
+
+.moving-animation {
+    @apply hover:-translate-y-1
+}
+

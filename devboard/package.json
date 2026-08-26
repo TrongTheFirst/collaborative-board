@@ -13,5 +13,8 @@
   "private": true,
   "devDependencies": {
     "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "@stomp/stompjs": "^7.3.0"
   }
 }
