@@ -18,11 +18,11 @@
 }
 
 .primary-button {
-    @apply border-blue-400/40
-           bg-blue-500
-           shadow-blue-500/25
-           hover:bg-blue-400
-           hover:shadow-blue-400/30;
+    @apply flex items-center
+    gap-2 px-3 py-2
+    bg-white border border-gray-200 rounded-xl shadow-sm
+    text-sm font-medium text-gray-700
+    hover:bg-gray-50 transition-colors cursor-pointer
 }
 
 .connect-button {

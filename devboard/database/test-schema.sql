@@ -62,16 +62,16 @@ create table board_members(
 delimiter //
 create procedure set_known_good_state()
 begin
-	delete from `user`;
-    alter table `user` auto_increment = 1;
 	delete from board;
 	alter table board auto_increment = 1;
+	delete from `user`;
+    alter table `user` auto_increment = 1;
 
     insert into `user` (email, display_name, password, created_at) values
-        ("a@a.com", "a","pass",'2020-01-01 01:01:00'),
-        ("b@b.com", "b","pass",'2020-01-01 01:01:00');
+        ("a@email.com", "a","encoded-password",'2020-01-01 01:01:00'),
+        ("b@email.com", "b","encoded-password",'2020-01-01 01:01:00');
     
     insert into board(owner_id, name, created_at, updated_at) values
-    	(1, "B1",)
+    	(1, "B1",'2020-01-01 01:01:00','2020-01-01 01:01:00');
 end //
 delimiter ;

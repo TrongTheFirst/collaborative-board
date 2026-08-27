@@ -1,10 +1,10 @@
 import { Link } from "react-router-dom";
-import { LogIn, Link2, Unlink } from "lucide-react";
+import { LogIn, Link2, Unlink, UserPlus} from "lucide-react";
 import { useSession } from "../contexts/SesssionContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import ProfileDropdown from "../components/ProfileDropdown";
 
-function OptionsBar({ setOpenCollabModal, setOpenLoginModal}) {
+function OptionsBar({ setOpenCollabModal, setOpenLoginModal, setOpenCreateModal}) {
     const { disconnectFromBoard, sessionConnected } = useSession();
     const { isLoggedIn } = useAuth();
 
@@ -15,7 +15,7 @@ function OptionsBar({ setOpenCollabModal, setOpenLoginModal}) {
                     <button
                         type="button"
                         onClick={() => setOpenCollabModal(true)}
-                        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                        className="primary-button"
                     >
                         <Link2 size={17} strokeWidth={1.75} />
                         <span>Connect</span>
@@ -24,7 +24,7 @@ function OptionsBar({ setOpenCollabModal, setOpenLoginModal}) {
                     <button
                         type="button"
                         onClick={disconnectFromBoard}
-                        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                        className="primary-button"
                     >
                         <Unlink size={17} strokeWidth={1.75} />
                         <span>Disconnect</span>
@@ -32,14 +32,24 @@ function OptionsBar({ setOpenCollabModal, setOpenLoginModal}) {
                 )}
 
                 {!isLoggedIn ?
-                    <button
-                        type="button"
-                        onClick={() => setOpenLoginModal(true)}
-                        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-xl shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                        <LogIn size={17} strokeWidth={1.75} />
-                        <span>Login</span>
-                    </button>
+                    (<>
+                        <button
+                            type="button"
+                            onClick={() => setOpenLoginModal(true)}
+                            className="primary-button"
+                        >
+                            <LogIn size={17} strokeWidth={1.75} />
+                            <span>Login</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setOpenCreateModal(true)}
+                            className="primary-button"
+                        >
+                            <UserPlus size={17} strokeWidth={1.75} />
+                            <span>Sign Up</span>
+                        </button>
+                    </>)
                  : <ProfileDropdown />}
             </div>
         </div>

@@ -158,7 +158,7 @@ function Board(){
         <>
             <div className="flex justify-end">
                 <Toolbar setDrawings={setDrawings} clearCanvas={clearCanvas} />
-                <OptionsBar setOpenCollabModal={setOpenCollabModal} setOpenLoginModal={setOpenLoginModal}/>
+                <OptionsBar setOpenCollabModal={setOpenCollabModal} setOpenLoginModal={setOpenLoginModal} setOpenCreateModal={setOpenCreateModal}/>
             </div>
 
             <canvas ref={canvasRef} className="fixed z-0 inset-0 w-screen h-screen"  />
