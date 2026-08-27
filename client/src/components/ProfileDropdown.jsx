@@ -15,7 +15,7 @@ export default function ProfileDropdown() {
     };
 
     return (
-        <div className="relative m-5 mr-10 mt-7.5">
+        <div className="relative">
             <button
                 type="button"
                 onClick={() => setOpen(!open)}

@@ -35,12 +35,11 @@ function LoginModal({ isLogin, setOpenLoginModal, setOpenCreateModal }) {
                 body: JSON.stringify(body)
             });
 
-            const payload = await res.json();
-
             if (!res.ok) {
                 throw new Error("Invalid email or password");
             }
 
+            const payload = await res.json();
             login(payload.token);
             setOpenLoginModal(false);
         } catch (err) {

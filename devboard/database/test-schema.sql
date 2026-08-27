@@ -10,14 +10,68 @@ create table `user` (
     created_at timestamp not null
 );
 
+create table board(
+	board_id bigint primary key auto_increment,
+	owner_id bigint null,
+	name varchar(50) not null,
+	created_at timestamp not null,
+	updated_at timestamp not null,
+	
+	constraint fk_board_user
+		foreign key(owner_id)
+		references `user`(user_id)
+);
+
+create table board_element(
+	element_id bigint unsigned primary key auto_increment,
+	board_id bigint not null,
+	`type` varchar(50) not null,
+	element_data JSON not null,
+	
+	constraint board_element_board
+		foreign key(board_id)
+		references board(board_id)
+);
+
+create table `role`(
+	role_id int primary key auto_increment,
+	name varchar(25) not null
+);
+
+
+create table board_members(
+	id bigint primary key auto_increment,
+	user_id bigint not null,
+	board_id bigint not null,
+	role_id int not null default 1,
+	joined_at timestamp not null,
+	
+	constraint board_members_board
+		foreign key(board_id)
+		references board(board_id),
+		
+	constraint board_members_user
+		foreign key(user_id)
+		references `user` (user_id),
+		
+	constraint board_members_role
+		foreign key(role_id)
+		references `role` (role_id)
+);
+
 delimiter //
 create procedure set_known_good_state()
 begin
 	delete from `user`;
     alter table `user` auto_increment = 1;
+	delete from board;
+	alter table board auto_increment = 1;
 
     insert into `user` (email, display_name, password, created_at) values
-        ("a@a.com", "a","pass",NOW()),
-        ("b@b.com", "b","pass",NOW());
+        ("a@a.com", "a","pass",'2020-01-01 01:01:00'),
+        ("b@b.com", "b","pass",'2020-01-01 01:01:00');
+    
+    insert into board(owner_id, name, created_at, updated_at) values
+    	(1, "B1",)
 end //
 delimiter ;

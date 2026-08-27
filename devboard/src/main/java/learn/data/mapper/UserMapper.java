@@ -22,7 +22,7 @@ public class UserMapper implements RowMapper<User> {
     @Override
     public User mapRow(ResultSet rs, int rowNum) throws SQLException {
         return new User(
-                rs.getInt(getIdColumnName()),
+                rs.getLong(getIdColumnName()),
                 rs.getString("email"),
                 rs.getString("password"),
                 rs.getString("display_name"),

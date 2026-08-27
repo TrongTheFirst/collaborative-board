@@ -39,8 +39,7 @@ class UserJdbcClientRepositoryTest {
     @Test
     void shouldCreate() throws DataAccessException {
         User toCreate = TestDataHelper.userToCreate();
-        User expected = TestDataHelper.userToCreate();
-        expected.setId(3);
+        User expected = TestDataHelper.userAfterCreate();
 
         assertNull(repository.findByEmail(toCreate.getEmail()));
 
