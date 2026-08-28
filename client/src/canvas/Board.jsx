@@ -8,36 +8,43 @@ import {useBoard}  from "../contexts/BoardContext.jsx";
 import CollabModal from "../components/CollabModal.jsx";
 import LoginModal from "../users/LoginModal.jsx"
 import CreateModal from "../users/CreateModal.jsx"
-
+/*
+on load determine if this is a room,
+ */
 function Board(){
     const [openCollabModal, setOpenCollabModal] = useState(false);
     const [openLoginModal, setOpenLoginModal] = useState(false);
     const [openCreateModal, setOpenCreateModal] = useState(false);
 
-    const {sendMessage, inSession, connectToRoom} = useSession();
-    const {drawings, addDrawing, clearDrawings } = useBoard();
+    const {sendDrawing, inSession, connectToRoom} = useSession();
+    const {drawings, addDrawing, clearDrawings, setBoardState,
+        setBoardDrawings, drawingsLoaded, boardId, setBoardId} = useBoard();
 
     const canvasRef = useRef(null);
     const drawingsRef = useRef(drawings);
+    const pageInitializedRef = useRef(false);
+    const drawingsCountRef = useRef(0);
 
     const navigate = useNavigate();
     const {roomCode} = useParams(null);
     if(roomCode){
-        connectToRoom(roomCode);
-
+        const onReply = (boardId, fetchedDrawings) =>{
+            setBoardId(boardId);
+            setBoardState(fetchedDrawings);
+        }
+        connectToRoom(roomCode, onReply, setBoardDrawings);
     }
-
 
     function clearCanvas(){
         const ctx = canvasRef.current.getContext("2d");
         ctx.clearRect(0,0,canvasRef.current.width, canvasRef.current.height);
     }
 
-    function drawBoard(){
+    function drawBoard(elements = drawingsRef.current){
         const canvas = canvasRef.current;
         const rc = rough.canvas(canvas);
 
-        drawingsRef.current.forEach((drawing) => {
+        elements.forEach((drawing) => {
             const points = drawing.points.map((point) => [
                 drawing.x + point.x,
                 drawing.y + point.y,
@@ -51,7 +58,27 @@ function Board(){
         })
     }
 
-    useEffect(() => { drawingsRef.current = drawings; }, [drawings]);
+    useEffect(() => {
+        drawingsRef.current = drawings;
+        if (!canvasRef.current) return;
+        if(drawings.length < drawingsCountRef.current){//reset tracking
+            clearCanvas();
+            pageInitializedRef.current = false;
+            drawingsCountRef.current = 0;
+            return;
+        }
+        if(drawingsLoaded && !pageInitializedRef.current){//first drawing of board
+            drawBoard(drawings);
+            drawingsCountRef.current = drawings.length;
+            pageInitializedRef.current = true;
+            return;
+        }
+        if (pageInitializedRef.current && drawings.length > drawingsCountRef.current) {//draw new drawings
+            drawBoard(drawings.slice(drawingsCountRef.current));
+            drawingsCountRef.current = drawings.length;
+        }
+
+        }, [drawings, drawingsLoaded]);
 
     useEffect(() => {
         let isDrawing = false;
@@ -129,24 +156,21 @@ function Board(){
                     strokeColor: "#000000",
                     strokeWidth: 2
                 }
+                const {type, ...elementData} = drawing;
+                const boardElement = {
+                    elementId: 0,
+                    boardId,
+                    type,
+                    elementData
+                };
                 if(inSession()){
-                    console.log("sending drawing")
-                    // const {type, ...element_data} = drawing;
-                    // const boardElement = {
-                    //     elementId: 1,
-                    //     boardID: boardId,
-                    //     type,
-                    //     elementData: element_data
-                    // }
-                    // console.log(element_data);
-                    // const message = {
-                    //     sender: "test",
-                    //     boardElement
-                    // }
-                    // sendMessage(message,1);
+                    sendDrawing(boardElement);
                 }else{
-                    addDrawing(drawing);
+                    addDrawing(boardElement);
+                    drawingsCountRef.current+= 1;
+                    setBoardDrawings(drawing);
                 }
+
             }
         }
 
@@ -170,7 +194,10 @@ function Board(){
         <>
             <div className="flex justify-end">
                 <Toolbar clearDrawings={clearDrawings} clearCanvas={clearCanvas} />
-                <OptionsBar setOpenCollabModal={setOpenCollabModal} setOpenLoginModal={setOpenLoginModal} setOpenCreateModal={setOpenCreateModal}/>
+                <OptionsBar setOpenCollabModal={setOpenCollabModal}
+                            setOpenLoginModal={setOpenLoginModal}
+                            setOpenCreateModal={setOpenCreateModal}
+                />
             </div>
 
             <canvas ref={canvasRef} className="fixed z-0 inset-0 w-screen h-screen"  />

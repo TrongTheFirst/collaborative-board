@@ -23,7 +23,7 @@ create table board(
 );
 
 create table board_element(
-	element_id bigint unsigned primary key auto_increment,
+	element_id bigint primary key auto_increment,
 	board_id bigint not null,
 	`type` varchar(50) not null,
 	element_data JSON not null,
@@ -58,20 +58,26 @@ create table board_members(
 		foreign key(role_id)
 		references `role` (role_id)
 );
-
 delimiter //
 create procedure set_known_good_state()
 begin
+	delete from board_element;
+	alter table board_element auto_increment = 1;
 	delete from board;
 	alter table board auto_increment = 1;
 	delete from `user`;
     alter table `user` auto_increment = 1;
+	
 
     insert into `user` (email, display_name, password, created_at) values
         ("a@email.com", "a","encoded-password",'2020-01-01 01:01:00'),
         ("b@email.com", "b","encoded-password",'2020-01-01 01:01:00');
     
     insert into board(owner_id, name, created_at, updated_at) values
-    	(1, "B1",'2020-01-01 01:01:00','2020-01-01 01:01:00');
+    	(1, "B1",'2020-01-01 01:01:00','2020-01-01 01:01:00'),
+    	(1, "B2",'2020-01-01 01:01:00','2020-01-01 01:01:00');
+    
+    insert into board_element(board_id, `type`, element_data) values
+    	(1, "freedraw", '{"x":1,"y":1}');
 end //
 delimiter ;

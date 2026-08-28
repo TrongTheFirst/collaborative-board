@@ -13,4 +13,5 @@ public interface BoardRepository {
     boolean update(Board board) throws DataAccessException;
 
     boolean delete(long id) throws DataAccessException;
+
 }

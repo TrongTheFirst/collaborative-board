@@ -8,6 +8,11 @@ export function SessionProvider({children}) {
     const stompClient = useRef(null);
     const subscription = useRef(null);
     const pendingOnConnectActions = useRef([]);
+    const roomCode = useRef(null);
+    const clientId = useRef(null);
+    if (!clientId.current) {
+        clientId.current = crypto.randomUUID();
+    }
 
     const navigate = useNavigate();
 
@@ -56,32 +61,55 @@ export function SessionProvider({children}) {
         };
     }, []);
 
-    const connectToRoom= (roomCode, onMessage) => {
+    function connectToRoom(newRoomCode, onReply, onNewDrawing){
         if (!stompClient.current) {
             return;
         }
 
         activateClient()
 
+        const sendJoinRequest = () => {
+            unsubscribe();
+
+            const replyTopic = `/topic/reply/${clientId.current}`;
+
+            const replySub = stompClient.current.subscribe(replyTopic, (message) => {
+                //TODO handle what happens after connecting
+                let { success, error, boardId, elements  } = JSON.parse(message.body);
+                if(!success){
+                    console.error(error);
+                }else{
+                    elements = elements.map(element => ({ type: element.type, ...element.elementData }));
+                    onReply(boardId, elements);
+                    delayOnConnectDo(subscribeToBoard);
+                }
+                replySub.unsubscribe();
+            });
+
+            sendMessage("/app/join", { clientId: clientId.current, roomCode:newRoomCode });
+        }
+
         const subscribeToBoard = () => {
             unsubscribe();
-            console.log(`Subscribed to /topic/room/${roomCode}`)
-            subscription.current = stompClient.current.subscribe(
-                `/topic/board/${roomCode}`, (message) => {
-                    console.log("Received:", message.body);
-                    //TODO handle what happens after connecting
+            roomCode.current = newRoomCode;
+            const replyTopic = `/topic/room/${newRoomCode}`;
 
+            console.log(`Subscribed to ${replyTopic}`);
+            subscription.current = stompClient.current.subscribe(
+                replyTopic, (message) => {
+                    console.log("received drawing")
+                    const { success, error, element} = JSON.parse(message.body);
+                    if(!success){
+                        console.error(error);
+                    }else{
+                        const drawing = { type: element.type, ...element.elementData };
+                        onNewDrawing(drawing);
+                    }
                 }
             );
         };
 
-        delayOnConnectDo(subscribeToBoard);
-    };
-
-    const disconnectFromRoom = () => {
-        unsubscribe();
-        deactivateClient();
-        navigate("/");
+        delayOnConnectDo(sendJoinRequest);
     };
 
     function createRoom(boardId) {
@@ -90,22 +118,31 @@ export function SessionProvider({children}) {
         const sendCreateRequest = () => {
             unsubscribe();
 
-            const clientId = crypto.randomUUID();
-            const replyTopic = `/topic/reply/${clientId}`;
+            const replyTopic = `/topic/reply/${clientId.current}`;
 
             const replySub = stompClient.current.subscribe(replyTopic, (message) => {
-                const roomCode = message.body;
-                console.log("Room created:", roomCode);
+                const { success, roomCode, error } = JSON.parse(message.body);
+                if (!success) {
+                    console.log(error);
+                } else {
+                    navigate(`/room/${roomCode}`);
+                }
                 replySub.unsubscribe();
-
-                navigate(`/room/${roomCode}`);
             });
 
-            sendMessage("/app/create", { clientId, boardId});
+            sendMessage("/app/create", { clientId: clientId.current, boardId});
         }
 
         delayOnConnectDo(sendCreateRequest);
     }
+
+    const disconnectFromRoom = () => {
+        unsubscribe();
+        deactivateClient();
+        roomCode.current = null;
+        setSessionConnected(false);
+        navigate("/");
+    };
 
     function delayOnConnectDo(onConnectFunction){
         if (stompClient.current.connected) {
@@ -120,6 +157,10 @@ export function SessionProvider({children}) {
             destination,
             body: JSON.stringify(message)
         });
+    }
+
+    function sendDrawing(boardElement){
+        sendMessage(`/app/room/${roomCode.current}`, boardElement);
     }
 
     function unsubscribe(){
@@ -152,7 +193,7 @@ export function SessionProvider({children}) {
             sessionConnected,
             connectToRoom,
             disconnectFromRoom,
-            sendMessage,
+            sendDrawing,
             createRoom
         }}>
             {children}

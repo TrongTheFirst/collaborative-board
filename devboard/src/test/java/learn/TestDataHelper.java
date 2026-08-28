@@ -2,6 +2,7 @@ package learn;
 
 import learn.models.Board;
 import learn.models.BoardElement;
+import learn.models.Room;
 import learn.models.User;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -56,6 +57,15 @@ public class TestDataHelper {
     public static BoardElement elementAfterCreate() {
         return new BoardElement(2,1,"freedraw",elementData);
     }
+
+    public static Room existingRoom() {
+        return new Room("ABC123", 1, testTime);
+    }
+
+    public static Room roomToCreate() {
+        return new Room("XYZ789", 1, testTime);
+    }
+    
 
     private final static LocalDateTime testTime = LocalDateTime.of(2020,1,1,1,1);
     private final static JsonNode elementData = mapper.createObjectNode().put("x",1).put("y",1);

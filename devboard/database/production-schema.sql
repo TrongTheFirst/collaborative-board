@@ -23,7 +23,7 @@ create table board(
 );
 
 create table board_element(
-	element_id bigint unsigned primary key auto_increment,
+	element_id bigint primary key auto_increment,
 	board_id bigint not null,
 	`type` varchar(50) not null,
 	element_data JSON not null,

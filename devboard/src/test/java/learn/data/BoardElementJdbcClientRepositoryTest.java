@@ -37,12 +37,12 @@ class BoardElementJdbcClientRepositoryTest {
         BoardElement toAdd = TestDataHelper.elementToCreate();
         BoardElement expected = TestDataHelper.elementAfterCreate();
 
-        assertEquals(List.of(),repository.findAllFromBoardId(toAdd.getBoardId()));
+        assertEquals(List.of(TestDataHelper.existingElement()),repository.findAllFromBoardId(toAdd.getBoardId()));
 
         BoardElement actual = repository.add(toAdd);
 
         assertEquals(expected,actual);
-        assertEquals(1, repository.findAllFromBoardId(toAdd.getBoardId()).size());
+        assertEquals(2, repository.findAllFromBoardId(toAdd.getBoardId()).size());
     }
 
     @Test

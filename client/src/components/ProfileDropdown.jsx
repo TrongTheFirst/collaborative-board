@@ -66,7 +66,7 @@ export default function ProfileDropdown() {
                             type="button"
                             onClick={() => {
                                 setOpen(false);
-                                navigate(`/users/${userId}`);
+                                navigate(`/boards`);
                             }}
                             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
                         >

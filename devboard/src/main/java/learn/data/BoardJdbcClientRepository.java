@@ -90,5 +90,4 @@ public class BoardJdbcClientRepository implements BoardRepository {
                 .update() == 1;
     }
 
-
 }

@@ -2,11 +2,18 @@ import { Link } from "react-router-dom";
 import { LogIn, Link2, Unlink, UserPlus} from "lucide-react";
 import { useSession } from "../contexts/SessionContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { useBoard } from "../contexts/BoardContext.jsx";
 import ProfileDropdown from "../components/ProfileDropdown";
 
 function OptionsBar({ setOpenCollabModal, setOpenLoginModal, setOpenCreateModal}) {
     const { disconnectFromRoom, sessionConnected } = useSession();
     const { isLoggedIn } = useAuth();
+    const { clearBoard } = useBoard();
+
+    function handleDisconnect() {
+        disconnectFromRoom();
+        clearBoard();
+    }
 
 
     return (
@@ -24,7 +31,7 @@ function OptionsBar({ setOpenCollabModal, setOpenLoginModal, setOpenCreateModal}
                 ) : (
                     <button
                         type="button"
-                        onClick={disconnectFromRoom}
+                        onClick={handleDisconnect}
                         className="primary-button"
                     >
                         <Unlink size={17} strokeWidth={1.75} />
