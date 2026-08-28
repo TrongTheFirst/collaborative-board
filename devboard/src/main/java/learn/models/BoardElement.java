@@ -12,8 +12,8 @@ import java.math.BigInteger;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BoardElement {
-    private BigInteger element_id;
-    private long board_id;
+    private long elementId;
+    private long boardId;
     private String type;
-    private JsonNode element_data;
+    private JsonNode elementData;
 }

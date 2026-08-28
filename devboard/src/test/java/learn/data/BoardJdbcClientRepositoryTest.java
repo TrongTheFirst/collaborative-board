@@ -1,5 +1,6 @@
 package learn.data;
 
+import learn.TestDataHelper;
 import learn.models.Board;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,16 @@ class BoardJdbcClientRepositoryTest {
     }
 
     @Test
+    void userHasBoard() throws DataAccessException{
+        assertTrue(repository.userHasBoard(1,1));
+    }
+
+    @Test
+    void userDoesNotHaveBoard() throws DataAccessException{
+        assertFalse(repository.userHasBoard(1,20));
+    }
+
+    @Test
     void shouldCreate() throws DataAccessException{
         Board toCreate = TestDataHelper.boardToCreate();
         Board expected = TestDataHelper.boardAfterCreate();
@@ -45,5 +56,17 @@ class BoardJdbcClientRepositoryTest {
 
         assertEquals(expected,actual);
         assertNotNull(repository.findById(toCreate.getBoardId()));
+    }
+
+    @Test
+    void shouldUpdate() throws DataAccessException{
+        assertTrue(repository.update(TestDataHelper.boardToUpdate()));
+        assertEquals(TestDataHelper.boardToUpdate(), repository.findById(TestDataHelper.boardToUpdate().getBoardId()));
+    }
+
+    @Test
+    void shouldDelete() throws DataAccessException {
+        assertTrue(repository.delete(2));
+        assertNull(repository.findById(2));
     }
 }

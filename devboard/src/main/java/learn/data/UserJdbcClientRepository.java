@@ -1,6 +1,5 @@
 package learn.data;
 
-import learn.data.DataAccessException;
 import learn.data.mapper.UserMapper;
 import learn.data.repository_interface.UserRepository;
 import learn.models.User;
@@ -20,6 +19,16 @@ public class UserJdbcClientRepository implements UserRepository{
         final String sql = "select * from user where email = ?;";
         return jdbcClient.sql(sql)
                 .param(email)
+                .query(new UserMapper())
+                .optional()
+                .orElse(null);
+    }
+
+    @Override
+    public User findById(long id) throws DataAccessException{
+        final String sql = "select * from user where user_id = ?;";
+        return jdbcClient.sql(sql)
+                .param(id)
                 .query(new UserMapper())
                 .optional()
                 .orElse(null);

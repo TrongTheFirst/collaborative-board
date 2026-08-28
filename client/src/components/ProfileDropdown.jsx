@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, LogOut, SquarePen, ChevronDown } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { useBoard } from "../contexts/BoardContext.jsx";
 
 export default function ProfileDropdown() {
-    const { userID, email, displayName, logout } = useAuth();
+    const { userId, email, displayName, logout } = useAuth();
+    const { clearBoard } = useBoard();
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
 
     const handleLogout = () => {
         logout();
         setOpen(false);
+        clearBoard();
         navigate("/");
     };
 
@@ -63,7 +66,7 @@ export default function ProfileDropdown() {
                             type="button"
                             onClick={() => {
                                 setOpen(false);
-                                navigate(`/users/${userID}`);
+                                navigate(`/users/${userId}`);
                             }}
                             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
                         >

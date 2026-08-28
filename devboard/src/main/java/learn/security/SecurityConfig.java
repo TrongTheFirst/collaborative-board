@@ -9,6 +9,7 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,12 +35,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(withDefaults())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth//determines who is allowed access to which URLs
                         .requestMatchers("/api/user/**").permitAll()//allows access to account creation and login
-                        .requestMatchers(HttpMethod.POST, "/api/board/add").permitAll()
+                        .requestMatchers("/api/board/**").permitAll()
+                        .requestMatchers("/api/element/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated())//every other request requires authentication
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)//apply jwt token verification

@@ -1,8 +1,10 @@
 import {useRef, useEffect, useState} from 'react'
+import { useParams, useNavigate } from "react-router-dom";
 import rough from "roughjs/bin/rough";
 import Toolbar from "./Toolbar.jsx";
 import OptionsBar from "./OptionsBar.jsx";
-import { useSession} from "../contexts/SesssionContext.jsx";
+import { useSession} from "../contexts/SessionContext.jsx";
+import {useBoard}  from "../contexts/BoardContext.jsx";
 import CollabModal from "../components/CollabModal.jsx";
 import LoginModal from "../users/LoginModal.jsx"
 import CreateModal from "../users/CreateModal.jsx"
@@ -11,9 +13,19 @@ function Board(){
     const [openCollabModal, setOpenCollabModal] = useState(false);
     const [openLoginModal, setOpenLoginModal] = useState(false);
     const [openCreateModal, setOpenCreateModal] = useState(false);
-    const {sendMessage, sessionConnected, boardId} = useSession();
+
+    const {sendMessage, inSession, connectToRoom} = useSession();
+    const {drawings, addDrawing, clearDrawings } = useBoard();
+
     const canvasRef = useRef(null);
-    const [drawings, setDrawings] = useState(() => JSON.parse(localStorage.getItem("drawings")) ?? []);
+    const drawingsRef = useRef(drawings);
+
+    const navigate = useNavigate();
+    const {roomCode} = useParams(null);
+    if(roomCode){
+        connectToRoom(roomCode);
+
+    }
 
 
     function clearCanvas(){
@@ -25,7 +37,7 @@ function Board(){
         const canvas = canvasRef.current;
         const rc = rough.canvas(canvas);
 
-        drawings.forEach((drawing) => {
+        drawingsRef.current.forEach((drawing) => {
             const points = drawing.points.map((point) => [
                 drawing.x + point.x,
                 drawing.y + point.y,
@@ -38,6 +50,8 @@ function Board(){
             });
         })
     }
+
+    useEffect(() => { drawingsRef.current = drawings; }, [drawings]);
 
     useEffect(() => {
         let isDrawing = false;
@@ -115,26 +129,24 @@ function Board(){
                     strokeColor: "#000000",
                     strokeWidth: 2
                 }
-                setDrawings(prev => {
-                    const newDrawings = [...prev, drawing];
-                    localStorage.setItem("drawings", JSON.stringify(newDrawings));
-                    return newDrawings;
-                });
-                // if(sessionConnected){
-                    const {type, ...element_data} = drawing;
-                    const boardElement = {
-                        element_id: 1,
-                        board_id: boardId,
-                        type,
-                        element_data: element_data
-                    }
-                    console.log(element_data);
-                    const message = {
-                        sender: "test",
-                        boardElement
-                    }
-                    sendMessage(message,1);
-                // }
+                if(inSession()){
+                    console.log("sending drawing")
+                    // const {type, ...element_data} = drawing;
+                    // const boardElement = {
+                    //     elementId: 1,
+                    //     boardID: boardId,
+                    //     type,
+                    //     elementData: element_data
+                    // }
+                    // console.log(element_data);
+                    // const message = {
+                    //     sender: "test",
+                    //     boardElement
+                    // }
+                    // sendMessage(message,1);
+                }else{
+                    addDrawing(drawing);
+                }
             }
         }
 
@@ -157,7 +169,7 @@ function Board(){
     return(
         <>
             <div className="flex justify-end">
-                <Toolbar setDrawings={setDrawings} clearCanvas={clearCanvas} />
+                <Toolbar clearDrawings={clearDrawings} clearCanvas={clearCanvas} />
                 <OptionsBar setOpenCollabModal={setOpenCollabModal} setOpenLoginModal={setOpenLoginModal} setOpenCreateModal={setOpenCreateModal}/>
             </div>
 

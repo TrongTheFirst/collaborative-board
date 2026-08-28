@@ -2,6 +2,9 @@ package learn.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -10,8 +13,12 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private final SecretKey key = Jwts.SIG.HS256.key().build();
+    private final SecretKey key;
     private final long expirationMs = 1000*60*60; // 1 hour
+
+    public JwtUtil(@Value("${jwt.secret}") String secret) {
+        this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+    }
 
     public String generateToken(long id, String email, String displayName) {
         return Jwts.builder()

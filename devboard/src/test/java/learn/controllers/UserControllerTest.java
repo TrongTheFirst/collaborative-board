@@ -1,7 +1,7 @@
 package learn.controllers;
 
 
-import learn.data.TestDataHelper;
+import learn.TestDataHelper;
 import learn.domain.Result;
 import learn.domain.ResultType;
 import learn.domain.UserService;
