@@ -6,7 +6,7 @@ import { useBoard } from "../contexts/BoardContext.jsx";
 import ProfileDropdown from "../components/ProfileDropdown";
 
 function OptionsBar({ setOpenCollabModal, setOpenLoginModal, setOpenCreateModal}) {
-    const { disconnectFromRoom, sessionConnected } = useSession();
+    const { disconnectFromRoom, inSession } = useSession();
     const { isLoggedIn } = useAuth();
     const { clearBoard } = useBoard();
 
@@ -19,7 +19,7 @@ function OptionsBar({ setOpenCollabModal, setOpenLoginModal, setOpenCreateModal}
     return (
         <div className="fixed z-10 inset-x-0 top-0 pointer-events-none">
             <div className="flex flex-row items-center justify-end gap-2 pointer-events-auto p-5 pt-7.5 pr-10">
-                {!sessionConnected ? (
+                {!inSession() ? (
                     <button
                         type="button"
                         onClick={() => setOpenCollabModal(true)}

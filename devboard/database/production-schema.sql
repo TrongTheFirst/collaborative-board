@@ -38,6 +38,17 @@ create table `role`(
 	name varchar(25) not null
 );
 
+create table room(
+	room_code varchar(50) not null primary key,
+	board_id bigint not null,
+	created_at timestamp not null,
+	
+	constraint room_board
+		foreign key(board_id)
+		references board(board_id)
+);
+
+
 
 create table board_members(
 	id bigint primary key auto_increment,

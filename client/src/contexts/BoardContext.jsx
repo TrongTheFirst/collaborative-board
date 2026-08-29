@@ -1,5 +1,7 @@
 import {createContext, useCallback, useContext, useState, useRef, useEffect} from "react";
+import { useParams } from "react-router-dom"
 import {useAuth} from "./AuthContext.jsx";
+import {useSession} from "./SessionContext.jsx";
 
 /*
 on load, determine if board is in DB (has boardId).
@@ -12,11 +14,46 @@ const BoardContext = createContext(null);
 export function BoardProvider({ children }) {
 
     const { userId, BASE_URL } = useAuth();
+    const { connectToRoom, isInRoom } = useSession();
     const [drawings,setDrawings] = useState([]);
     const [drawingsLoaded, setDrawingsLoaded] = useState(false);
     const currentBoard = useRef(null);
     const createBoard = useRef(false)
     const [boardId, setBoardId] = useState(() => localStorage.getItem("boardId"));
+    const { roomCode } = useParams();
+
+    useEffect(()=>{
+        if(roomCode && !isInRoom(roomCode)){//run once
+            const onReply = (boardId, fetchedDrawings) =>{
+                setBoardId(boardId);
+                setBoardState(fetchedDrawings);
+            }
+            connectToRoom(roomCode, onReply, setBoardDrawings);
+        }
+    },[roomCode])
+
+    useEffect(()=>{
+        if (boardId) {
+            fetchBoardElements();
+            fetchBoard();
+            return;
+        }
+
+        if (roomCode) {
+            return;
+        }
+
+        if (createBoard.current) {
+            return;
+        }
+
+        createBoard.current = true;
+
+        addBoard().catch(error => {
+            console.error(error);
+            createBoard.current = false;
+        });
+    }, [boardId, roomCode]);
 
     async function addBoard(){
         const headers = {"Content-Type": "application/json"};
@@ -105,24 +142,6 @@ export function BoardProvider({ children }) {
             console.error("Failed to add drawing", error);
         }
     }
-    useEffect(()=>{
-        if (boardId) {
-            fetchBoardElements();
-            fetchBoard();
-            return;
-        }
-
-        if (createBoard.current) {
-            return;
-        }
-
-        createBoard.current = true;
-
-        addBoard().catch(error => {
-            console.error(error);
-            createBoard.current = false;
-        });
-    }, [boardId]);
 
     function setBoardDrawings(drawing){
         setDrawings((prevState) => {

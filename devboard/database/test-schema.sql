@@ -33,6 +33,17 @@ create table board_element(
 		references board(board_id)
 );
 
+create table room(
+	room_code varchar(50) not null primary key,
+	board_id bigint not null,
+	created_at timestamp not null,
+	
+	constraint room_board
+		foreign key(board_id)
+		references board(board_id)
+);
+
+
 create table `role`(
 	role_id int primary key auto_increment,
 	name varchar(25) not null
@@ -61,6 +72,7 @@ create table board_members(
 delimiter //
 create procedure set_known_good_state()
 begin
+	delete from room;
 	delete from board_element;
 	alter table board_element auto_increment = 1;
 	delete from board;
@@ -79,5 +91,8 @@ begin
     
     insert into board_element(board_id, `type`, element_data) values
     	(1, "freedraw", '{"x":1,"y":1}');
+    
+    insert into room(room_code, board_id, created_at) values
+    ("ABC123",1,'2020-01-01 01:01:00');
 end //
 delimiter ;

@@ -4,10 +4,10 @@ import {useBoard} from "../contexts/BoardContext.jsx"
 
 function CollabModal({ setOpenCollabModal }) {
     const { connectToBoard, createRoom} = useSession();
-    const {boardId} = useBoard();
+    const { boardId, setBoardDrawings } = useBoard();
 
     function handleCollabButton() {
-        createRoom(boardId);
+        createRoom(boardId, setBoardDrawings);
         setOpenCollabModal(false);
     }
 

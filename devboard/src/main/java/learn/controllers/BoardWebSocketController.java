@@ -35,6 +35,7 @@ public class BoardWebSocketController {
             messagingTemplate.convertAndSend(replyTopic, new CreateRoomResponse(false, error, null));
             return;
         }
+
         messagingTemplate.convertAndSend(replyTopic,
                 new CreateRoomResponse(true, null, result.getPayload().getRoomCode()));
     }

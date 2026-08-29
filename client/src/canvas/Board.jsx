@@ -17,8 +17,8 @@ function Board(){
     const [openCreateModal, setOpenCreateModal] = useState(false);
 
     const {sendDrawing, inSession, connectToRoom} = useSession();
-    const {drawings, addDrawing, clearDrawings, setBoardState,
-        setBoardDrawings, drawingsLoaded, boardId, setBoardId} = useBoard();
+    const {drawings, addDrawing, clearDrawings,
+        setBoardDrawings, drawingsLoaded, boardId} = useBoard();
 
     const canvasRef = useRef(null);
     const drawingsRef = useRef(drawings);
@@ -26,14 +26,8 @@ function Board(){
     const drawingsCountRef = useRef(0);
 
     const navigate = useNavigate();
-    const {roomCode} = useParams(null);
-    if(roomCode){
-        const onReply = (boardId, fetchedDrawings) =>{
-            setBoardId(boardId);
-            setBoardState(fetchedDrawings);
-        }
-        connectToRoom(roomCode, onReply, setBoardDrawings);
-    }
+
+
 
     function clearCanvas(){
         const ctx = canvasRef.current.getContext("2d");
@@ -177,7 +171,6 @@ function Board(){
         canvas.addEventListener("pointerdown", handlePointerDown);
         canvas.addEventListener("pointermove", handlePointerMove);
         canvas.addEventListener("pointerup", handlePointerUp);
-        canvas.addEventListener("pointerleave", handlePointerUp)
         window.addEventListener("resize", resize);
 
 
@@ -188,7 +181,7 @@ function Board(){
             canvas.removeEventListener("pointerup", handlePointerUp);
 
         };
-    }, []);
+    }, [boardId, drawings]);
 
     return(
         <>
