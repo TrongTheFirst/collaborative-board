@@ -1,6 +1,6 @@
 import { Hand, MousePointer2, Shapes, Pencil, Type, Eraser, ChevronDown, Trash} from "lucide-react";
 
-function Toolbar({ setDrawings, clearCanvas }) {
+function Toolbar({ clearDrawings, clearCanvas }) {
     const tools = [
         { icon: Hand, label: "Hand" },
         { icon: MousePointer2, label: "Pointer" },
@@ -49,8 +49,7 @@ function Toolbar({ setDrawings, clearCanvas }) {
                         aria-label="Trash"
                         className="art-button w-10 h-10"
                         onClick={() => {
-                            setDrawings([]);
-                            localStorage.removeItem("drawings");
+                            clearDrawings;
                             clearCanvas();
                         }}
                     >

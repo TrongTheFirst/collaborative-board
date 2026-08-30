@@ -1,19 +1,32 @@
 import {useRef, useEffect, useState} from 'react'
+import { useParams, useNavigate } from "react-router-dom";
 import rough from "roughjs/bin/rough";
 import Toolbar from "./Toolbar.jsx";
 import OptionsBar from "./OptionsBar.jsx";
-import { useSession} from "../contexts/SesssionContext.jsx";
+import { useSession} from "../contexts/SessionContext.jsx";
+import {useBoard}  from "../contexts/BoardContext.jsx";
 import CollabModal from "../components/CollabModal.jsx";
 import LoginModal from "../users/LoginModal.jsx"
 import CreateModal from "../users/CreateModal.jsx"
-
+/*
+on load determine if this is a room,
+ */
 function Board(){
     const [openCollabModal, setOpenCollabModal] = useState(false);
     const [openLoginModal, setOpenLoginModal] = useState(false);
     const [openCreateModal, setOpenCreateModal] = useState(false);
-    const {sendMessage, sessionConnected, boardId} = useSession();
+
+    const {sendDrawing, inSession, connectToRoom} = useSession();
+    const {drawings, addDrawing, clearDrawings,
+        setBoardDrawings, drawingsLoaded, boardId} = useBoard();
+
     const canvasRef = useRef(null);
-    const [drawings, setDrawings] = useState(() => JSON.parse(localStorage.getItem("drawings")) ?? []);
+    const drawingsRef = useRef(drawings);
+    const pageInitializedRef = useRef(false);
+    const drawingsCountRef = useRef(0);
+
+    const navigate = useNavigate();
+
 
 
     function clearCanvas(){
@@ -21,11 +34,11 @@ function Board(){
         ctx.clearRect(0,0,canvasRef.current.width, canvasRef.current.height);
     }
 
-    function drawBoard(){
+    function drawBoard(elements = drawingsRef.current){
         const canvas = canvasRef.current;
         const rc = rough.canvas(canvas);
 
-        drawings.forEach((drawing) => {
+        elements.forEach((drawing) => {
             const points = drawing.points.map((point) => [
                 drawing.x + point.x,
                 drawing.y + point.y,
@@ -38,6 +51,28 @@ function Board(){
             });
         })
     }
+
+    useEffect(() => {
+        drawingsRef.current = drawings;
+        if (!canvasRef.current) return;
+        if(drawings.length < drawingsCountRef.current){//reset tracking
+            clearCanvas();
+            pageInitializedRef.current = false;
+            drawingsCountRef.current = 0;
+            return;
+        }
+        if(drawingsLoaded && !pageInitializedRef.current){//first drawing of board
+            drawBoard(drawings);
+            drawingsCountRef.current = drawings.length;
+            pageInitializedRef.current = true;
+            return;
+        }
+        if (pageInitializedRef.current && drawings.length > drawingsCountRef.current) {//draw new drawings
+            drawBoard(drawings.slice(drawingsCountRef.current));
+            drawingsCountRef.current = drawings.length;
+        }
+
+        }, [drawings, drawingsLoaded]);
 
     useEffect(() => {
         let isDrawing = false;
@@ -115,33 +150,27 @@ function Board(){
                     strokeColor: "#000000",
                     strokeWidth: 2
                 }
-                setDrawings(prev => {
-                    const newDrawings = [...prev, drawing];
-                    localStorage.setItem("drawings", JSON.stringify(newDrawings));
-                    return newDrawings;
-                });
-                // if(sessionConnected){
-                    const {type, ...element_data} = drawing;
-                    const boardElement = {
-                        element_id: 1,
-                        board_id: boardId,
-                        type,
-                        element_data: element_data
-                    }
-                    console.log(element_data);
-                    const message = {
-                        sender: "test",
-                        boardElement
-                    }
-                    sendMessage(message,1);
-                // }
+                const {type, ...elementData} = drawing;
+                const boardElement = {
+                    elementId: 0,
+                    boardId,
+                    type,
+                    elementData
+                };
+                if(inSession()){
+                    sendDrawing(boardElement);
+                }else{
+                    addDrawing(boardElement);
+                    drawingsCountRef.current+= 1;
+                    setBoardDrawings(drawing);
+                }
+
             }
         }
 
         canvas.addEventListener("pointerdown", handlePointerDown);
         canvas.addEventListener("pointermove", handlePointerMove);
         canvas.addEventListener("pointerup", handlePointerUp);
-        canvas.addEventListener("pointerleave", handlePointerUp)
         window.addEventListener("resize", resize);
 
 
@@ -152,13 +181,16 @@ function Board(){
             canvas.removeEventListener("pointerup", handlePointerUp);
 
         };
-    }, []);
+    }, [boardId, drawings]);
 
     return(
         <>
             <div className="flex justify-end">
-                <Toolbar setDrawings={setDrawings} clearCanvas={clearCanvas} />
-                <OptionsBar setOpenCollabModal={setOpenCollabModal} setOpenLoginModal={setOpenLoginModal}/>
+                <Toolbar clearDrawings={clearDrawings} clearCanvas={clearCanvas} />
+                <OptionsBar setOpenCollabModal={setOpenCollabModal}
+                            setOpenLoginModal={setOpenLoginModal}
+                            setOpenCreateModal={setOpenCreateModal}
+                />
             </div>
 
             <canvas ref={canvasRef} className="fixed z-0 inset-0 w-screen h-screen"  />

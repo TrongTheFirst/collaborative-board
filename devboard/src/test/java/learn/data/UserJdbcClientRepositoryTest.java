@@ -1,5 +1,6 @@
 package learn.data;
 
+import learn.TestDataHelper;
 import learn.models.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,8 +40,7 @@ class UserJdbcClientRepositoryTest {
     @Test
     void shouldCreate() throws DataAccessException {
         User toCreate = TestDataHelper.userToCreate();
-        User expected = TestDataHelper.userToCreate();
-        expected.setId(3);
+        User expected = TestDataHelper.userAfterCreate();
 
         assertNull(repository.findByEmail(toCreate.getEmail()));
 

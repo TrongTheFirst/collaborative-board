@@ -1,5 +1,6 @@
 package learn.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +11,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -32,19 +34,23 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);//"Bearer "
-            String username = jwtUtil.extractUsername(token);
 
             //make sure request hasnt been authenticated already
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                if (jwtUtil.isTokenValid(token, username)) {
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                    //attach request details
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    //tell spring security that this user is authenticated
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+            try{
+                String email = jwtUtil.extractEmail(token);
+                if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                    if (jwtUtil.isTokenValid(token, email)) {
+                        UsernamePasswordAuthenticationToken authToken =
+                                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        //attach request details
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        //tell spring security that this user is authenticated
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
                 }
+            }catch(JwtException | IllegalArgumentException | UsernameNotFoundException e){
+                //TODO
             }
         }
         //continue to next filter

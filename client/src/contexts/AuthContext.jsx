@@ -1,4 +1,4 @@
-import {createContext, useCallback, useContext, useState} from "react";
+import {createContext, useCallback, useContext, useState, useEffect} from "react";
 
 const AuthContext = createContext(null);
 
@@ -6,22 +6,25 @@ const BASE_URL = "http://localhost:8080/api"
 export function AuthProvider({ children }) {
     const [token, setToken] = useState(() => localStorage.getItem("token"));
 
-    const parsedToken = token ? JSON.parse(atob(token.split(".")[1])) : null;
+    const parsedToken = parseToken(token);
 
     const email = parsedToken ? parsedToken.email : "";
     const userId = parsedToken ? parsedToken.sub : null;
     const displayName = parsedToken ? parsedToken.displayName : null;
 
-
-    const login = (newToken) => {
+    function login(newToken) {
         localStorage.setItem("token", newToken);
         setToken(newToken);
-    };
+    }
 
-    const logout = () => {
+    function logout(){
         localStorage.removeItem("token");
         setToken(null);
-    };
+    }
+
+    function parseToken(token){
+        return token ? JSON.parse(atob(token.split(".")[1])) : null;
+    }
 
 
     return (

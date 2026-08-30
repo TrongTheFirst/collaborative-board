@@ -36,7 +36,7 @@ public class UserController {
         }
         User createdUser = result.getPayload();
         String token = jwtUtil.generateToken(createdUser.getId(), createdUser.getEmail(), createdUser.getDisplayName());
-        AuthResponse response = new AuthResponse(token);
+        AuthResponse response = new AuthResponse(token, createdUser.getId());
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -60,7 +60,7 @@ public class UserController {
                     user.getDisplayName()
             );
 
-            return new ResponseEntity<>(new AuthResponse(token),HttpStatus.OK);
+            return new ResponseEntity<>(new AuthResponse(token, user.getId()),HttpStatus.OK);
 
         } catch (AuthenticationException e) {
             return new ResponseEntity<>("Invalid email or password", HttpStatus.UNAUTHORIZED);

@@ -1,7 +1,7 @@
 package learn.controllers;
 
 
-import learn.data.TestDataHelper;
+import learn.TestDataHelper;
 import learn.domain.Result;
 import learn.domain.ResultType;
 import learn.domain.UserService;
@@ -14,7 +14,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;

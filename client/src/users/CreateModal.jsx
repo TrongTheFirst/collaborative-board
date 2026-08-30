@@ -2,9 +2,12 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { UserPlus } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { useBoard } from "../contexts/BoardContext.jsx";
 
 function CreateModal({ setOpenCreateModal, setOpenLoginModal}) {
     const { login, BASE_URL } = useAuth();
+    const { getBoard, editBoard} = useBoard();
+
 
     const API_URL = BASE_URL + "/user";
 
@@ -47,6 +50,10 @@ function CreateModal({ setOpenCreateModal, setOpenLoginModal}) {
 
             login(payload.token);
             setOpenCreateModal(false);
+            const board = getBoard();
+            if(board != null && board.ownerId === 0){
+                editBoard(board, payload.token, payload.userId)
+            }
         } catch (err) {
             setError(err.message);
         }
@@ -160,7 +167,7 @@ function CreateModal({ setOpenCreateModal, setOpenLoginModal}) {
 
                                 <button
                                     type="submit"
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                                    className="w-full primary-button"
                                 >
                                     <span>Sign Up</span>
                                 </button>
@@ -168,7 +175,7 @@ function CreateModal({ setOpenCreateModal, setOpenLoginModal}) {
                                 <div className="pt-1 text-center text-sm text-gray-500">
                                     <span>Already have an account? </span>
                                     <button
-                                        className="font-medium text-gray-800 hover:text-gray-500 transition-colors"
+                                        className="font-medium text-gray-800 hover:text-gray-500 hover:underline transition-colors"
                                         onClick={() => {
                                             setOpenLoginModal(true);
                                             setOpenCreateModal(false);

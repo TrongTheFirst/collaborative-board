@@ -1,11 +1,13 @@
 import { Users, Link2, X } from "lucide-react";
-import { useSession } from "../contexts/SesssionContext.jsx";
+import { useSession } from "../contexts/SessionContext.jsx";
+import {useBoard} from "../contexts/BoardContext.jsx"
 
 function CollabModal({ setOpenCollabModal }) {
-    const { connectToBoard } = useSession();
+    const { connectToBoard, createRoom} = useSession();
+    const { boardId, setBoardDrawings } = useBoard();
 
-    function handleClick() {
-        connectToBoard(1);
+    function handleCollabButton() {
+        createRoom(boardId, setBoardDrawings);
         setOpenCollabModal(false);
     }
 
@@ -50,8 +52,8 @@ function CollabModal({ setOpenCollabModal }) {
 
                     <button
                         type="button"
-                        onClick={handleClick}
-                        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 cursor-pointer"
+                        onClick={handleCollabButton}
+                        className="mt-6 w-full primary-button"
                     >
                         <Link2 size={17} strokeWidth={1.75} />
                         <span>Start Session</span>
