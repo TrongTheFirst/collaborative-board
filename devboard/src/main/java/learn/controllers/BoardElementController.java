@@ -47,6 +47,47 @@ public class BoardElementController {
         return new ResponseEntity<>(result.getPayload(), HttpStatus.CREATED);
     }
 
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> deleteElement(@RequestBody BoardElement element, Authentication auth) throws DataAccessException {        User user = authHelper.getUserFromAuth(auth);
+        if (user == null) {
+            return new ResponseEntity<>("Authentication required", HttpStatus.UNAUTHORIZED);
+        }
+        Board existingBoard = boardService.findById(element.getBoardId());
+        if (existingBoard == null) {
+            return new ResponseEntity<>("Board not found", HttpStatus.NOT_FOUND);
+        }
+        if (existingBoard.getOwnerId() != user.getId()) {
+            return new ResponseEntity<>("Cannot delete another user's board", HttpStatus.FORBIDDEN);
+        }
 
+        Result<BoardElement> result = service.delete(element.getElementId());
+        if (!result.isSuccess()) {
+            return ErrorResponse.build(result);
+        }
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @DeleteMapping("/delete/{boardId}")
+    public ResponseEntity<?> deleteAll(@PathVariable long boardId, Authentication auth) throws DataAccessException {
+        User user = authHelper.getUserFromAuth(auth);
+        if (user == null) {
+            return new ResponseEntity<>("Authentication required", HttpStatus.UNAUTHORIZED);
+        }
+
+        Board existingBoard = boardService.findById(boardId);
+        if (existingBoard == null) {
+            return new ResponseEntity<>("Board not found", HttpStatus.NOT_FOUND);
+        }
+
+        if (existingBoard.getOwnerId() != user.getId()) {
+            return new ResponseEntity<>("Cannot delete another user's board", HttpStatus.FORBIDDEN);
+        }
+
+        Result<BoardElement> result = service.deleteAll(boardId);
+        if (!result.isSuccess()) {
+            return ErrorResponse.build(result);
+        }
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
 
 }

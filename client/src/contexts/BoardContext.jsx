@@ -128,7 +128,6 @@ export function BoardProvider({ children }) {
         setBoard(toUpdate)
     }
     async function addDrawing(boardElement){
-        // setBoardDrawings(drawing);
         try{
             const response = await fetch(BASE_URL+`/element/add`,{
                 method:"POST",
@@ -142,8 +141,34 @@ export function BoardProvider({ children }) {
             console.error("Failed to add drawing", error);
         }
     }
-    async function deleteBoardElements(){
-
+    // async function deleteBoardElement(){
+    //     try{
+    //         const response = await fetch(BASE_URL+`/element/delete`,{
+    //             method:"POST",
+    //             headers: {"Content-Type": "application/json"},
+    //             body: JSON.stringify(boardElement)
+    //         });
+    //         if (!response.ok) {
+    //             throw new Error(`Failed to save drawing: ${response.status}`);
+    //         }
+    //     }catch(error){
+    //         console.error("Failed to add drawing", error);
+    //     }
+    // }
+    async function deleteAllBoardElements(token){
+            try{
+                const response = await fetch(BASE_URL+`/element/delete/${boardId}`,{
+                    method:"DELETE",
+                    headers :{
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error(`Failed to delete board elements: ${response.status}`);
+                }
+            }catch(error){
+                console.error("Failed to delete board elements", error);
+            }
     }
 
     function setBoardDrawings(drawing){
@@ -204,6 +229,7 @@ export function BoardProvider({ children }) {
                 setBoardDrawings,
                 addDrawing,
                 clearDrawings,
+                deleteAllBoardElements,
             }}
         >
             {children}

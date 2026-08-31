@@ -52,8 +52,21 @@ public class BoardElementService {
         }
         return result;
     }
+    public Result<BoardElement> delete(long id) throws DataAccessException {
+        Result<BoardElement> result = new Result<>();
+        if(!repository.delete(id)){
+            result.addErrorMessage("Board element %s was not found",ResultType.NOT_FOUND, id);
+        }
+        return result;
+    }
 
-    public boolean d
+    public Result<BoardElement> deleteAll(long boardId) throws DataAccessException {
+        Result<BoardElement> result = new Result<>();
+        if(!repository.deleteAll(boardId)){
+            result.addErrorMessage("Nothing to delete",ResultType.NOT_FOUND, boardId);
+        }
+        return result;
+    }
 
     private void validateElementData(JsonNode elementData, Result<BoardElement> result) throws DataAccessException {
         if(elementData == null){

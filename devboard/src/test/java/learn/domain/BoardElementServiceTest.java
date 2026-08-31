@@ -125,4 +125,37 @@ class BoardElementServiceTest {
             assertEquals(TestDataHelper.elementAfterCreate(), actual.getPayload());
         }
     }
+
+    @Nested
+    class DeleteTests{
+        @Test
+        void deleteFailsWhenBoardElementNotFound() throws DataAccessException {
+            when(repository.delete(999)).thenReturn(false);
+            Result<BoardElement> actual = service.delete(999);
+            assertEquals(ResultType.NOT_FOUND, actual.getResultType());
+            assertTrue(actual.getErrorMessages().contains("Board element 999 was not found"));
+        }
+
+        @Test
+        void deleteHappyPath() throws DataAccessException {
+            when(repository.delete(1)).thenReturn(true);
+            Result<BoardElement> actual = service.delete(1);
+            assertTrue(actual.isSuccess());
+        }
+
+        @Test
+        void deleteAllFailsWhenNoBoardElements() throws DataAccessException {
+            when(repository.deleteAll(999)).thenReturn(false);
+            Result<BoardElement> actual = service.deleteAll(999);
+            assertEquals(ResultType.NOT_FOUND, actual.getResultType());
+            assertTrue(actual.getErrorMessages().contains("Nothing to delete"));
+        }
+
+        @Test
+        void deleteAllHappyPath() throws DataAccessException {
+            when(repository.deleteAll(1)).thenReturn(true);
+            Result<BoardElement> actual = service.deleteAll(1);
+            assertTrue(actual.isSuccess());
+        }
+    }
 }

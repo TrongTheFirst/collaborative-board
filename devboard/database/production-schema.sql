@@ -22,6 +22,7 @@ create table board(
 		references `user`(user_id)
 );
 
+
 create table board_element(
 	element_id bigint primary key auto_increment,
 	board_id bigint not null,
@@ -31,6 +32,7 @@ create table board_element(
 	constraint board_element_board
 		foreign key(board_id)
 		references board(board_id)
+		on delete cascade
 );
 
 create table `role`(

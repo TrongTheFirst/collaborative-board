@@ -75,6 +75,6 @@ public class BoardElementJdbcClientRepository implements BoardElementRepository 
         """;
         return  jdbcClient.sql(sql)
                 .param(boardId)
-                .update() == 1;
+                .update() > 1;
     }
 }

@@ -17,7 +17,7 @@ function Board(){
     const [openCreateModal, setOpenCreateModal] = useState(false);
 
     const {sendDrawing, inSession, connectToRoom} = useSession();
-    const {drawings, addDrawing, clearDrawings,
+    const {drawings, addDrawing, clearDrawings, deleteAllBoardElements,
         setBoardDrawings, drawingsLoaded, boardId} = useBoard();
 
     const canvasRef = useRef(null);
@@ -182,7 +182,10 @@ function Board(){
     return(
         <>
             <div className="flex justify-end">
-                <Toolbar clearDrawings={clearDrawings} clearCanvas={clearCanvas} />
+                <Toolbar clearDrawings={clearDrawings}
+                         clearCanvas={clearCanvas}
+                         deleteAllBoardElements={deleteAllBoardElements}
+                        />
                 <OptionsBar setOpenCollabModal={setOpenCollabModal}
                             setOpenLoginModal={setOpenLoginModal}
                             setOpenCreateModal={setOpenCreateModal}

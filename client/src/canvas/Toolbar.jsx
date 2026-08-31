@@ -1,6 +1,7 @@
 import { Hand, MousePointer2, Shapes, Pencil, Type, Eraser, ChevronDown, Trash} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
-function Toolbar({ clearDrawings, clearCanvas }) {
+function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements}) {
     const tools = [
         { icon: Hand, label: "Hand" },
         { icon: MousePointer2, label: "Pointer" },
@@ -9,6 +10,8 @@ function Toolbar({ clearDrawings, clearCanvas }) {
         { icon: Eraser, label: "Erase" },
         { icon: Trash, label: "Trash" }
     ];
+
+    const {token} = useAuth();
 
 
     return (
@@ -45,16 +48,19 @@ function Toolbar({ clearDrawings, clearCanvas }) {
                             <Icon size={18} strokeWidth={1.75} />
                         </button>
                     ))}
-                    <button
-                        aria-label="Trash"
-                        className="art-button w-10 h-10"
-                        onClick={() => {
-                            clearDrawings;
-                            clearCanvas();
-                        }}
-                    >
-                        <Trash size={18} strokeWidth={1.75} />
-                    </button>
+                    <div className="group relative">
+                        <button
+                            aria-label="Trash"
+                            className="art-button w-10 h-10 "
+                            onClick={() => {
+                                clearDrawings();
+                                clearCanvas();
+                                deleteAllBoardElements(token);
+                            }}
+                        >
+                            <Trash size={18} strokeWidth={1.75}/>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
