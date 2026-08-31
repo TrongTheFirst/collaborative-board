@@ -7,6 +7,8 @@ import learn.models.Board;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @AllArgsConstructor
 public class BoardService {
@@ -19,6 +21,9 @@ public class BoardService {
 
     public boolean userHasBoard(long userId, long boardId) throws DataAccessException {
         return repository.userHasBoard(userId, boardId);
+    }
+    public List<Board> findByUserId(long userId) throws DataAccessException {
+        return repository.findByUserId(userId);
     }
 
     public Result<Board> create(Board board) throws DataAccessException {

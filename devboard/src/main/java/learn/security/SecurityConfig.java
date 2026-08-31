@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth//determines who is allowed access to which URLs
                         .requestMatchers("/api/user/**").permitAll()//allows access to account creation and login
+                        .requestMatchers("/api/board/user/**").authenticated()
                         .requestMatchers("/api/board/**").permitAll()
                         .requestMatchers("/api/element/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()

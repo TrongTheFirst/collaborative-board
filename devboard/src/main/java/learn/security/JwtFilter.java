@@ -51,6 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }catch(JwtException | IllegalArgumentException | UsernameNotFoundException e){
                 //TODO
+                System.out.println("JWT authentication failed: " + e.getMessage());
             }
         }
         //continue to next filter

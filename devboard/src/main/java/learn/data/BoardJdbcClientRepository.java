@@ -9,6 +9,8 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 @AllArgsConstructor
 public class BoardJdbcClientRepository implements BoardRepository {
@@ -36,6 +38,18 @@ public class BoardJdbcClientRepository implements BoardRepository {
                 .param(userId)
                 .query(Boolean.class)
                 .single();
+    }
+
+    @Override
+    public List<Board> findByUserId(long userId) throws DataAccessException{
+        final String sql = """
+                select board_id, owner_id, name, created_at, updated_at
+                from board where owner_id = ?;
+                """;
+        return jdbcClient.sql(sql)
+                .param(userId)
+                .query(new BoardMapper())
+                .list();
     }
 
     @Override

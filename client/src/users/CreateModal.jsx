@@ -175,7 +175,7 @@ function CreateModal({ setOpenCreateModal, setOpenLoginModal}) {
                                 <div className="pt-1 text-center text-sm text-gray-500">
                                     <span>Already have an account? </span>
                                     <button
-                                        className="font-medium text-gray-800 hover:text-gray-500 hover:underline transition-colors"
+                                        className="font-medium text-gray-800 hover:text-gray-500 hover:underline transition-colors cursor-pointer"
                                         onClick={() => {
                                             setOpenLoginModal(true);
                                             setOpenCreateModal(false);
