@@ -51,4 +51,10 @@ class BoardElementJdbcClientRepositoryTest {
         assertTrue(repository.delete(toDelete.getElementId()));
         assertEquals(List.of(),repository.findAllFromBoardId(toDelete.getBoardId()));
     }
+
+    @Test
+    void shouldDeleteAll() throws DataAccessException {
+        assertTrue(repository.deleteAll(1));
+        assertEquals(List.of(),repository.findAllFromBoardId(1));
+    }
 }

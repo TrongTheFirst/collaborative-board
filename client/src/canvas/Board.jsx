@@ -1,5 +1,5 @@
 import {useRef, useEffect, useState} from 'react'
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation} from "react-router-dom";
 import rough from "roughjs/bin/rough";
 import Toolbar from "./Toolbar.jsx";
 import OptionsBar from "./OptionsBar.jsx";
@@ -24,10 +24,6 @@ function Board(){
     const drawingsRef = useRef(drawings);
     const pageInitializedRef = useRef(false);
     const drawingsCountRef = useRef(0);
-
-    const navigate = useNavigate();
-
-
 
     function clearCanvas(){
         const ctx = canvasRef.current.getContext("2d");

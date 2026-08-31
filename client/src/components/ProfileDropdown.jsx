@@ -1,14 +1,18 @@
-import { useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, LogOut, SquarePen, ChevronDown } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useBoard } from "../contexts/BoardContext.jsx";
+import { useClickOutside } from "./useClickOutside.js";
 
 export default function ProfileDropdown() {
     const { userId, email, displayName, logout } = useAuth();
     const { clearBoard } = useBoard();
     const [open, setOpen] = useState(false);
+    const dropdownRef = useRef(null);
     const navigate = useNavigate();
+
+    useClickOutside(dropdownRef, () => setOpen(false), open);
 
     const handleLogout = () => {
         logout();
@@ -18,7 +22,7 @@ export default function ProfileDropdown() {
     };
 
     return (
-        <div className="relative">
+        <div className="relative" ref={dropdownRef}>
             <button
                 type="button"
                 onClick={() => setOpen(!open)}

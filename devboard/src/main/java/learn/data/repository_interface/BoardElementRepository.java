@@ -11,4 +11,6 @@ public interface BoardElementRepository {
     BoardElement add(BoardElement boardElement) throws DataAccessException;
 
     boolean delete(long id) throws DataAccessException;
+
+    boolean deleteAll(long boardId) throws DataAccessException;
 }

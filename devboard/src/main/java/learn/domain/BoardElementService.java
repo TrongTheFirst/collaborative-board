@@ -53,6 +53,8 @@ public class BoardElementService {
         return result;
     }
 
+    public boolean d
+
     private void validateElementData(JsonNode elementData, Result<BoardElement> result) throws DataAccessException {
         if(elementData == null){
             result.addErrorMessage("Board element data cannot be null", ResultType.INVALID);

@@ -4,7 +4,8 @@ import {SessionProvider} from "../contexts/SessionContext.jsx";
 import {BoardProvider} from "../contexts/BoardContext.jsx";
 import NotFound from "./NotFound.jsx";
 import Board from "../canvas/Board.jsx";
-import BoardInventory from "../Inventory/BoardInventory.jsx"
+import BoardInventory from "../inventory/BoardInventory.jsx"
+import BoardInventoryTrash from "../inventory/BoardInventoryTrash.jsx"
 
 function AppLayout() {
     return (
@@ -34,6 +35,10 @@ const router = createBrowserRouter([
             {
                 path: "/boards",
                 element: <BoardInventory />
+            },
+            {
+                path: "/boards/trash",
+                element: <BoardInventoryTrash />
             }
         ]
     },

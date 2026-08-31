@@ -34,8 +34,8 @@ export function BoardProvider({ children }) {
 
     useEffect(()=>{
         if (boardId) {
-            fetchBoardElements();
-            fetchBoard();
+            fetchBoardElements(boardId);
+            fetchBoard(boardId);
             return;
         }
 
@@ -84,7 +84,7 @@ export function BoardProvider({ children }) {
         createBoard.current = false;
     }
 
-    async function fetchBoardElements(){
+    async function fetchBoardElements(boardId){
         try {
             const response = await fetch(BASE_URL+`/element/${boardId}`);
             if(response.ok){
@@ -98,7 +98,7 @@ export function BoardProvider({ children }) {
             setDrawingsLoaded(true);
         }
     }
-    async function fetchBoard(){
+    async function fetchBoard(boardId){
         const response = await fetch(BASE_URL+`/board/${boardId}`);
         if(response.ok){
             const payload = await response.json();
@@ -142,6 +142,9 @@ export function BoardProvider({ children }) {
             console.error("Failed to add drawing", error);
         }
     }
+    async function deleteBoardElements(){
+
+    }
 
     function setBoardDrawings(drawing){
         setDrawings((prevState) => {
@@ -178,6 +181,12 @@ export function BoardProvider({ children }) {
         clearDrawings();
     }
 
+    function loadBoard(boardId){
+        setBoardId(boardId);
+        fetchBoardElements(boardId);
+        fetchBoard(boardId);
+    }
+
     return (
         <BoardContext.Provider
             value={{
@@ -185,7 +194,9 @@ export function BoardProvider({ children }) {
                 setBoardId,
                 getBoard,
                 setBoard,
+                addBoard,
                 editBoard,
+                loadBoard,
                 clearBoard,
                 drawings,
                 drawingsLoaded,

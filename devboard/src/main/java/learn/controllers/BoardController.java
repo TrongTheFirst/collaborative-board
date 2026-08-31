@@ -5,11 +5,15 @@ import learn.domain.BoardService;
 import learn.domain.Result;
 import learn.dtos.BoardRequest;
 import learn.models.Board;
+import learn.models.User;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/board")
@@ -29,6 +33,21 @@ public class BoardController {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getUsersBoard(@PathVariable("userId") long userId, Authentication auth) throws DataAccessException {
+        User user = authHelper.getUserFromAuth(auth);
+
+        if (user == null) {
+            return new ResponseEntity<>("Authentication required", HttpStatus.UNAUTHORIZED);
+        }
+
+        if (user.getId() != userId) {
+            return new ResponseEntity<>("Cannot access another user's boards", HttpStatus.FORBIDDEN);
+        }
+
+        List<Board> boards = service.findByUserId(userId);
+        return new ResponseEntity<>(boards, HttpStatus.OK);
+    }
     @PostMapping("/add")
     public ResponseEntity<?> addBoard(@RequestBody Board board, Authentication auth) throws DataAccessException {
         //both anonymous and logged-in users are allowed to add boards

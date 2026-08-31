@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -43,6 +45,23 @@ class BoardJdbcClientRepositoryTest {
     @Test
     void userDoesNotHaveBoard() throws DataAccessException{
         assertFalse(repository.userHasBoard(1,20));
+    }
+
+    @Test
+    void findByUserIdHappyPath() throws DataAccessException{
+        Board b1 = TestDataHelper.existingBoard();
+        Board b2 = TestDataHelper.existingBoard();
+        b2.setBoardId(2);
+        b2.setBoardName("B2");
+        List<Board> expected = List.of(b1,b2);
+
+        List<Board> actual = repository.findByUserId(1);
+        assertEquals(expected,actual);
+    }
+
+    @Test
+    void findByUserNotFound() throws DataAccessException{
+        assertEquals(List.of(),repository.findByUserId(100));
     }
 
     @Test
