@@ -208,6 +208,7 @@ export function BoardProvider({ children }) {
 
     function loadBoard(boardId){
         setBoardId(boardId);
+        localStorage.setItem("boardId",boardId);
         fetchBoardElements(boardId);
         fetchBoard(boardId);
     }

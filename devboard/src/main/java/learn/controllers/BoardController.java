@@ -50,9 +50,16 @@ public class BoardController {
     }
     @PostMapping("/add")
     public ResponseEntity<?> addBoard(@RequestBody Board board, Authentication auth) throws DataAccessException {
-        //both anonymous and logged-in users are allowed to add boards
-        if(authHelper.boardOwnerExistsAndAuthUserIsNotTheSame(board.getOwnerId(), auth)){
-            return new ResponseEntity<>("Owner and User are not the same",HttpStatus.FORBIDDEN);
+        User user = authHelper.getUserFromAuth(auth);
+
+        if (user == null) {
+            if (board.getOwnerId() != 0) {
+                return new ResponseEntity<>("Can only create ownerless boards while logged out", HttpStatus.FORBIDDEN);
+            }
+        } else {
+            if (board.getOwnerId() != user.getId()) {
+                return new ResponseEntity<>("Cannot create a board for another user", HttpStatus.FORBIDDEN);
+            }
         }
 
         Result<Board> result = service.create(board);

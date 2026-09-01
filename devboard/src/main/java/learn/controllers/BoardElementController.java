@@ -48,7 +48,8 @@ public class BoardElementController {
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<?> deleteElement(@RequestBody BoardElement element, Authentication auth) throws DataAccessException {        User user = authHelper.getUserFromAuth(auth);
+    public ResponseEntity<?> deleteElement(@RequestBody BoardElement element, Authentication auth) throws DataAccessException {
+        User user = authHelper.getUserFromAuth(auth);
         if (user == null) {
             return new ResponseEntity<>("Authentication required", HttpStatus.UNAUTHORIZED);
         }
@@ -69,18 +70,20 @@ public class BoardElementController {
 
     @DeleteMapping("/delete/{boardId}")
     public ResponseEntity<?> deleteAll(@PathVariable long boardId, Authentication auth) throws DataAccessException {
-        User user = authHelper.getUserFromAuth(auth);
-        if (user == null) {
-            return new ResponseEntity<>("Authentication required", HttpStatus.UNAUTHORIZED);
-        }
-
         Board existingBoard = boardService.findById(boardId);
         if (existingBoard == null) {
             return new ResponseEntity<>("Board not found", HttpStatus.NOT_FOUND);
         }
 
-        if (existingBoard.getOwnerId() != user.getId()) {
-            return new ResponseEntity<>("Cannot delete another user's board", HttpStatus.FORBIDDEN);
+        User user = authHelper.getUserFromAuth(auth);
+        if (user == null) {
+            if (existingBoard.getOwnerId() != 0) {
+                return new ResponseEntity<>("Can only delete own board", HttpStatus.FORBIDDEN);
+            }
+        } else {//TODO allow deleting if a board member
+            if (existingBoard.getOwnerId() != user.getId()) {
+                return new ResponseEntity<>("Cannot create a board for another user", HttpStatus.FORBIDDEN);
+            }
         }
 
         Result<BoardElement> result = service.deleteAll(boardId);
