@@ -2,10 +2,13 @@ package learn.controllers;
 
 import learn.data.DataAccessException;
 import learn.domain.BoardElementService;
+import learn.domain.BoardMemberService;
 import learn.domain.Result;
 import learn.domain.RoomService;
 import learn.dtos.*;
+import learn.models.Board;
 import learn.models.BoardElement;
+import learn.models.BoardMember;
 import learn.models.Room;
 import lombok.AllArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -23,6 +26,7 @@ public class BoardWebSocketController {
     private final SimpMessagingTemplate messagingTemplate;
     private final BoardElementService elementService;
     private final RoomService roomService;
+    private final BoardMemberService memberService;
 
     //TODO make more secure
     @MessageMapping("/room/create")
@@ -31,46 +35,79 @@ public class BoardWebSocketController {
         String replyTopic = "/topic/reply/" + request.clientId();
 
         if (!result.isSuccess()) {
-            String error = String.join("; ", result.getErrorMessages());
-            messagingTemplate.convertAndSend(replyTopic, new CreateRoomResponse(false, error, null));
+            messagingTemplate.convertAndSend(replyTopic, new CreateRoomResponse(false, result.getErrorMessages(), null,null));
+            return;
+        }
+        BoardMember member = new BoardMember(
+                0,
+                request.clientId(),
+                request.displayName(),
+                result.getPayload().getRoomCode(),
+                2,
+                request.joinedAt()
+        );
+        Result<BoardMember> memberResult = memberService.add(member);
+        if(!memberResult.isSuccess()){
+            messagingTemplate.convertAndSend(replyTopic, new CreateRoomResponse(false, memberResult.getErrorMessages(), null,null));
             return;
         }
 
         messagingTemplate.convertAndSend(replyTopic,
-                new CreateRoomResponse(true, null, result.getPayload().getRoomCode()));
+                new CreateRoomResponse(true, null, memberResult.getPayload().getRoomCode(),member));
     }
 
     @MessageMapping("/room/join")
     public void clientJoinsAndGetsBoardState(@Payload JoinRoomRequest request) throws DataAccessException {
-        Room room = roomService.findByRoomCode(request.roomCode());
+        BoardMember member = new  BoardMember(
+                0,
+                request.clientId(),
+                request.displayName(),
+                request.roomCode(),
+                request.roleId(),
+                request.joinedAt()
+        );
+
+        Result<BoardMember> result = memberService.add(member);
+
         String replyTopic = "/topic/reply/" + request.clientId();
 
-        if (room == null) {
-            messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(false, "No room found", null,null ));
+        if (!result.isSuccess()) {
+            messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(false, result.getErrorMessages(), null,null,null, null));
             return;
         }
+        Room room = roomService.findByRoomCode(request.roomCode());
 
         List<BoardElement> boardElements = elementService.findAllFromBoardId(room.getBoardId());
-        messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(true, null, room.getBoardId(), boardElements));
+        List<BoardMember> members = memberService.findByRoomCode(request.roomCode());
+        messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(true, null, room.getBoardId(), boardElements, result.getPayload(), members));
+        messagingTemplate.convertAndSend("/topic/room/" + request.roomCode() + "/joined",result.getPayload());
     }
 
     @MessageMapping("/room/end")
-    public void endRoom(@Payload JoinRoomRequest request) throws DataAccessException {
+    public void endRoom(@Payload RoomRequest request) throws DataAccessException {
         Room room = roomService.findByRoomCode(request.roomCode());
+        String replyTopic = "/topic/room/" + request.roomCode() + "/ended";
 
         if (room == null) {
-            messagingTemplate.convertAndSend("/topic/room/" + request.roomCode() + "/ended",
+            messagingTemplate.convertAndSend(replyTopic,
                     new SuccessResponse(false, "No room found"));
             return;
         }
-        if(!room.getHostClientId().equals(request.clientId())){
-            return;// not the host
+        if(!room.getHostClientId().equals(request.clientId())){//not host
+            messagingTemplate.convertAndSend(replyTopic,
+                    new SuccessResponse(false, "Not host"));
+            return;
         }
 
         roomService.delete(request.roomCode());
 
         messagingTemplate.convertAndSend("/topic/room/" + request.roomCode() + "/ended",
                 new SuccessResponse(true, null));
+    }
+
+    @MessageMapping("/room/leave")
+    public void leaveRoom(@Payload JoinRoomRequest request) throws DataAccessException {
+
     }
 
     @MessageMapping("/room/{roomCode}")
@@ -98,5 +135,7 @@ public class BoardWebSocketController {
         messagingTemplate.convertAndSend("/topic/room/" + roomCode,
                 new RoomEraseResponse(true, "erase",null, req.elementClientId()));
     }
+
+
 
 }

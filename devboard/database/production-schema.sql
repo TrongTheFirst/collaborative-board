@@ -52,23 +52,24 @@ create table room(
 		references board(board_id)
 );
 
-create table board_members(
+create table board_member(
 	id bigint primary key auto_increment,
-	user_id bigint not null,
+	display_name varchar(50),
 	room_code varchar(50) not null,
+	client_id varchar(50) not null,
 	role_id int not null default 1,
 	joined_at timestamp not null,
-	
+
 	constraint board_members_room
 		foreign key(room_code)
-		references room(room_code),
-		
-	constraint board_members_user
-		foreign key(user_id)
-		references `user` (user_id),
-		
+		references room(room_code)
+		on delete cascade,
+
 	constraint board_members_role
 		foreign key(role_id)
-		references `role` (role_id)
+		references `role` (role_id),
+
+	constraint board_member_room_client_unique
+		unique (room_code, client_id)
 );
 

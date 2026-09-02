@@ -5,7 +5,8 @@ import Toolbar from "./Toolbar.jsx";
 import OptionsBar from "./OptionsBar.jsx";
 import { useSession} from "../contexts/SessionContext.jsx";
 import {useBoard}  from "../contexts/BoardContext.jsx";
-import CollabModal from "../components/CollabModal.jsx";
+import CollabStartModal from "../components/CollabStartModal.jsx";
+import  CollabEndModal from "../components/CollabEndModal.jsx";
 import LoginModal from "../users/LoginModal.jsx"
 import CreateModal from "../users/CreateModal.jsx"
 import { createPencilTool, drawPencilElement } from "./tools/Pencil.js";
@@ -16,7 +17,8 @@ import { createLineTool, drawLineElement } from "./tools/Line.js"
 import { createEraserTool } from "./tools/Eraser.js";
 
 function Board(){
-    const [openCollabModal, setOpenCollabModal] = useState(false);
+    const [openCollabStartModal, setOpenCollabStartModal] = useState(false);
+    const [openCollabEndModal, setOpenCollabEndModal] = useState(false);
     const [openLoginModal, setOpenLoginModal] = useState(false);
     const [openCreateModal, setOpenCreateModal] = useState(false);
     const [activeTool, setActiveTool] = useState("pencil");
@@ -247,7 +249,8 @@ function Board(){
                          activeTool={activeTool}
                          setActiveTool={setActiveTool}
                 />
-                <OptionsBar setOpenCollabModal={setOpenCollabModal}
+                <OptionsBar setOpenCollabStartModal={setOpenCollabStartModal}
+                            setOpenCollabEndModal={setOpenCollabEndModal}
                             setOpenLoginModal={setOpenLoginModal}
                             setOpenCreateModal={setOpenCreateModal}
                 />
@@ -272,7 +275,8 @@ function Board(){
                     }}
                 />
             )}
-            {openCollabModal && <CollabModal setOpenCollabModal={setOpenCollabModal}/>}
+            {openCollabStartModal && <CollabStartModal setOpenCollabStartModal={setOpenCollabStartModal} setOpenCollabEndModal={setOpenCollabEndModal}/>}
+            {openCollabEndModal && <CollabEndModal setOpenCollabEndModal={setOpenCollabEndModal}/>}
             {openLoginModal && <LoginModal setOpenLoginModal={setOpenLoginModal} setOpenCreateModal={setOpenCreateModal}/>}
             {openCreateModal && <CreateModal setOpenLoginModal={setOpenLoginModal} setOpenCreateModal={setOpenCreateModal}/>}
         </>

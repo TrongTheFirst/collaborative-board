@@ -24,13 +24,15 @@ export function BoardProvider({ children }) {
 
     useEffect(()=>{
         if(roomCode && !isInRoom(roomCode)){//run once
-            const onReply = (boardId, fetchedDrawings) =>{
-                setBoardId(boardId);
+            const onReply = (board_id, fetchedDrawings) =>{
+                setBoardId(board_id);
                 setBoardState(fetchedDrawings);
             }
-            const onRoomEnd = () => {
+            const onRoomEnd = (isHost) => {
                 disconnectFromRoom();
-                clearBoard();
+                if(!isHost){
+                    clearBoard();
+                }
             };
             connectToRoom(roomCode, onReply, setBoardDrawings, removeDrawingByClientId, onRoomEnd);
         }

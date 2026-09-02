@@ -1,3 +1,11 @@
 package learn.dtos;
 
-public record CreateRoomResponse(boolean success, String error, String roomCode ) { }
+import learn.models.BoardMember;
+
+import java.util.List;
+
+public record CreateRoomResponse(boolean success,
+                                 List<String> errors,
+                                 String roomCode,
+                                 BoardMember member
+ ) { }

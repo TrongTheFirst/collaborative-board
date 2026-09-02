@@ -51,28 +51,33 @@ create table `role`(
 );
 
 
-create table board_members(
+create table board_member(
 	id bigint primary key auto_increment,
-	user_id bigint not null,
+	display_name varchar(50),
 	room_code varchar(50) not null,
+	client_id varchar(50) not null,
 	role_id int not null default 1,
 	joined_at timestamp not null,
-	
+
 	constraint board_members_room
 		foreign key(room_code)
-		references room(room_code),
-		
-	constraint board_members_user
-		foreign key(user_id)
-		references `user` (user_id),
-		
+		references room(room_code)
+		on delete cascade,
+
 	constraint board_members_role
 		foreign key(role_id)
-		references `role` (role_id)
+		references `role` (role_id),
+
+	constraint board_member_room_client_unique
+		unique (room_code, client_id)
 );
 delimiter //
 create procedure set_known_good_state()
 begin
+	delete from board_member;
+	alter table board_member auto_increment = 1;
+	delete from role;
+	alter table role auto_increment = 1;
 	delete from room;
 	delete from board_element;
 	alter table board_element auto_increment = 1;
@@ -93,7 +98,13 @@ begin
     insert into board_element(board_id, `type`, element_data) values
     	(1, "freedraw", '{"x":1,"y":1}');
     
-    insert into room(room_code, board_id, created_at) values
-    ("ABC123",1,'2020-01-01 01:01:00');
+    insert into `role` (name) values
+    ("Member"), ("Owner"), ("Viewer");
+    
+    insert into room(room_code, board_id, host_client_id, created_at) values
+    ("ABC123",1,"test-host-client-id",'2020-01-01 01:01:00');
+    
+    insert into board_member(id, user_id, display_name, room_code, role_id, joined_at) values
+	(1, 1, "a", "ABC123", 1, '2020-01-01 01:01:00');
 end //
 delimiter ;

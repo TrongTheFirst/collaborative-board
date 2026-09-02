@@ -1,22 +1,18 @@
 import { Users, Link2, X } from "lucide-react";
 import { useSession } from "../contexts/SessionContext.jsx";
-import {useBoard} from "../contexts/BoardContext.jsx"
+import { useBoard } from "../contexts/BoardContext.jsx"
 
-function CollabModal({ setOpenCollabModal }) {
-    const { connectToBoard, disconnectFromRoom, createRoom} = useSession();
-    const { boardId, setBoardDrawings, removeDrawingByClientId, clearBoard} = useBoard();
+function CollabEndModal({setOpenCollabEndModal}) {
+    const { disconnectFromRoom } = useSession();
+    const { clearBoard } = useBoard();
 
-    function handleCollabButton() {
-        const onRoomEnded = () => {
-            disconnectFromRoom();
-            clearBoard();
-        };
-        createRoom(boardId, setBoardDrawings, removeDrawingByClientId, onRoomEnded);
-        setOpenCollabModal(false);
+    function handleCloseButton() {
+        disconnectFromRoom();
+        setOpenCollabEndModal(false);
     }
 
     return (
-        <div className="modal-base" onClick={() => setOpenCollabModal(false)}>
+        <div className="modal-base" onClick={() => setOpenCollabEndModal(false)}>
             <div
                 className="modal-container"
                 onClick={(e) => e.stopPropagation()}
@@ -40,7 +36,7 @@ function CollabModal({ setOpenCollabModal }) {
 
                     <button
                         type="button"
-                        onClick={() => setOpenCollabModal(false)}
+                        onClick={() => setOpenCollabEndModal(false)}
                         aria-label="Close"
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 cursor-pointer"
                     >
@@ -56,11 +52,11 @@ function CollabModal({ setOpenCollabModal }) {
 
                     <button
                         type="button"
-                        onClick={handleCollabButton}
+                        onClick={handleCloseButton}
                         className="mt-6 w-full primary-button"
                     >
                         <Link2 size={17} strokeWidth={1.75} />
-                        <span>Start Session</span>
+                        <span>Stop Session</span>
                     </button>
                 </div>
             </div>
@@ -68,4 +64,4 @@ function CollabModal({ setOpenCollabModal }) {
     );
 }
 
-export default CollabModal;
+export default CollabEndModal;

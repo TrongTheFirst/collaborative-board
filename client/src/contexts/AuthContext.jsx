@@ -5,12 +5,13 @@ const AuthContext = createContext(null);
 const BASE_URL = "http://localhost:8080/api"
 export function AuthProvider({ children }) {
     const [token, setToken] = useState(() => localStorage.getItem("token"));
+    const [displayName, setDisplayName] = useState();
 
     const parsedToken = parseToken(token);
 
     const email = parsedToken ? parsedToken.email : "";
     const userId = parsedToken ? parsedToken.sub : null;
-    const displayName = parsedToken ? parsedToken.displayName : null;
+    parsedToken ? parsedToken.displayName : null;
 
     function login(newToken) {
         localStorage.setItem("token", newToken);

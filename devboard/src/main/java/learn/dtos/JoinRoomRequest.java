@@ -1,4 +1,6 @@
 package learn.dtos;
 
-public record JoinRoomRequest(String clientId, String roomCode) {
+import java.time.LocalDateTime;
+
+public record JoinRoomRequest(String clientId, String roomCode, String displayName, int roleId, LocalDateTime joinedAt) {
 }

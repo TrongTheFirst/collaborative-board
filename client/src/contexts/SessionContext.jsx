@@ -8,26 +8,26 @@ export function SessionProvider({children}) {
     const stompClient = useRef(null);
     const subscription = useRef(null);
     const roomEndedSubscription = useRef(null);
+    const joinRoomSubscription = useRef(null);
     const pendingOnConnectActions = useRef([]);
     const roomCode = useRef(null);
     const clientId = useRef(null);
     const host = useRef(null);
+    const sessionDisplayName = useRef(null);
+    const [collaborators, setCollaborators] = useState([]);
 
     const navigate = useNavigate();
     const [sessionConnected, setSessionConnected] = useState(false);
 
     if (!clientId.current) {
-        clientId.current = crypto.randomUUID();
+        clientId.current = localStorage.getItem("clientId") || crypto.randomUUID();
+        localStorage.setItem("clientId", clientId.current);
     }
 
     if(!stompClient.current) {
         stompClient.current = new Client({
             brokerURL: "ws://localhost:8080/ws",
             reconnectDelay: 5000,
-
-            debug: (message) => {
-                console.log("STOMP:", message);
-            },
 
             onConnect: () => {
                 console.log("STOMP onConnect called");
@@ -63,6 +63,9 @@ export function SessionProvider({children}) {
             console.log("Stomp client null. Leaving connectToRoom...")
             return;
         }
+        if(host.current){
+            return;
+        }
 
         activateClient();
 
@@ -72,11 +75,13 @@ export function SessionProvider({children}) {
             const replyTopic = `/topic/reply/${clientId.current}`;
 
             const replySub = stompClient.current.subscribe(replyTopic, (message) => {
-                let { success, error, boardId, elements } = JSON.parse(message.body);
+                let { success, errors, boardId, elements, member, members} = JSON.parse(message.body);
                 if (!success) {
-                    console.error(error);
+                    console.error(errors);
                     navigate("/")
                 } else {
+                    sessionDisplayName.current = member.displayName;
+                    setCollaborators(members);
                     elements = elements.map(element => ({ type: element.type, ...element.elementData }));
                     onReply(boardId, elements);
                     subscribeToRoom(newRoomCode, onNewDrawing, onErase, onRoomEnd);
@@ -85,13 +90,18 @@ export function SessionProvider({children}) {
                 replySub.unsubscribe();
             });
 
-            sendMessage("/app/room/join", { clientId: clientId.current, roomCode: newRoomCode });
+            sendMessage("/app/room/join", {
+                clientId: clientId.current,
+                roomCode: newRoomCode,
+                roleId: 1,
+                joinedAt: Temporal.Now.plainDateTimeISO()
+            });
         }
 
         delayOnConnectDo(sendJoinRequest);
     }
 
-    function createRoom(boardId, onNewDrawing, onErase) {
+    function createRoom(boardId, displayName, subReq) {
         if (!stompClient.current) return;
 
         activateClient();
@@ -103,18 +113,25 @@ export function SessionProvider({children}) {
             console.log(`Subscribed to: `,replyTopic);
 
             const replySub = stompClient.current.subscribe(replyTopic, (message) => {
-                const { success, roomCode: newRoomCode, error } = JSON.parse(message.body);
+                const { success, errors, roomCode: newRoomCode, member } = JSON.parse(message.body);
                 if (!success) {
                     console.log(error);
                 } else {
                     host.current = true;
-                    // subscribeToRoom(newRoomCode, onNewDrawing, onErase); // set roomCode.current NOW
+                    sessionDisplayName.current = member.displayName;
+                    setCollaborators((prev)=>[...prev, member]);
+                    subscribeToRoom(newRoomCode, subReq.onNewDrawing, subReq.onErase, subReq.onRoomEnd)
                     navigate(`/room/${newRoomCode}`);
                 }
                 replySub.unsubscribe();
             });
 
-            sendMessage("/app/room/create", { clientId: clientId.current, boardId });
+            sendMessage("/app/room/create", {
+                clientId: clientId.current,
+                boardId,
+                displayName,
+                joinedAt: Temporal.Now.plainDateTimeISO()
+            });
         }
 
         delayOnConnectDo(sendCreateRequest);
@@ -137,10 +154,19 @@ export function SessionProvider({children}) {
             }
         });
 
-        roomEndedSubscription.current = stompClient.current.subscribe(replyTopic+"/ended", () => {
-            if(!host.current){
-                console.log("Host ended room");
-                onRoomEnd();
+        joinRoomSubscription.current = stompClient.current.subscribe(replyTopic+"/joined", (message) => {
+            const person = JSON.parse(message.body);
+            console.log("new person: ", person);
+            if(person){
+                setCollaborators((prev)=>[...prev, person]);
+            }
+        })
+
+        roomEndedSubscription.current = stompClient.current.subscribe(replyTopic+"/ended", (message) => {
+            const { success, error } = JSON.parse(message.body);
+            if(success && !host.current){
+                window.alert("Host ended room");
+                onRoomEnd(host.current);
                 navigate("/");
             }
         })
@@ -154,6 +180,7 @@ export function SessionProvider({children}) {
         unsubscribe();
         deactivateClient();
         roomCode.current = null;
+        setCollaborators([]);
         setSessionConnected(false);
         navigate("/");
     };
@@ -195,6 +222,10 @@ export function SessionProvider({children}) {
             subscription.current.unsubscribe();
             subscription.current = null;
         }
+        if(joinRoomSubscription.current){
+            joinRoomSubscription.current.unsubscribe();
+            joinRoomSubscription.current = null;
+        }
         if (roomEndedSubscription.current) {
             roomEndedSubscription.current.unsubscribe();
             roomEndedSubscription.current = null;
@@ -226,12 +257,20 @@ export function SessionProvider({children}) {
     function isInRoom(code){
         return stompClient.current?.connected && roomCode.current === code;
     }
+    function getClientId(){
+        if(clientId.current){
+            return clientId.current;
+        }
+        return null;
+    }
 
     return (
         <SessionContext.Provider value={{
             inSession,
             isInRoom,
             sessionConnected,
+            collaborators,
+            getClientId,
             connectToRoom,
             disconnectFromRoom,
             sendDrawing,
