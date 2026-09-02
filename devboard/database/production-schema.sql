@@ -22,16 +22,20 @@ create table board(
 		references `user`(user_id)
 );
 
+
 create table board_element(
 	element_id bigint primary key auto_increment,
 	board_id bigint not null,
 	`type` varchar(50) not null,
 	element_data JSON not null,
+	client_id varchar(36) null,
 	
 	constraint board_element_board
 		foreign key(board_id)
 		references board(board_id)
+		on delete cascade
 );
+
 
 create table `role`(
 	role_id int primary key auto_increment,

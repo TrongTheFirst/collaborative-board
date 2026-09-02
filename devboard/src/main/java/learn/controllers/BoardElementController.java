@@ -47,6 +47,38 @@ public class BoardElementController {
         return new ResponseEntity<>(result.getPayload(), HttpStatus.CREATED);
     }
 
+    @DeleteMapping("/delete/{boardId}")
+    public ResponseEntity<?> deleteAll(@PathVariable long boardId, Authentication auth) throws DataAccessException {
+        Board existingBoard = boardService.findById(boardId);
+        if (existingBoard == null) {
+            return new ResponseEntity<>("Board not found", HttpStatus.NOT_FOUND);
+        }
 
+        if (authHelper.boardOwnerExistsAndAuthUserIsNotTheSame(existingBoard.getOwnerId(), auth)) {
+            return new ResponseEntity<>("Can only delete own board", HttpStatus.FORBIDDEN);
+        }
+
+        Result<BoardElement> result = service.deleteAll(boardId);
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @DeleteMapping("/delete/{boardId}/{clientId}")
+    public ResponseEntity<?> deleteByClientId(@PathVariable long boardId, @PathVariable String clientId, Authentication auth) throws DataAccessException {
+        Board existingBoard = boardService.findById(boardId);
+        if (existingBoard == null) {
+            return new ResponseEntity<>("Board not found", HttpStatus.NOT_FOUND);
+        }
+
+        if (authHelper.boardOwnerExistsAndAuthUserIsNotTheSame(existingBoard.getOwnerId(), auth)) {
+            return new ResponseEntity<>("Can only delete own board", HttpStatus.FORBIDDEN);
+        }
+
+        Result<BoardElement> result = service.deleteByClientId(boardId, clientId);
+        if (!result.isSuccess()) {
+            return ErrorResponse.build(result);
+        }
+        return ResponseEntity.noContent().build();
+    }
 
 }

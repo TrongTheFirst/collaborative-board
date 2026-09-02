@@ -13,4 +13,6 @@ public interface BoardElementRepository {
     boolean delete(long id) throws DataAccessException;
 
     boolean deleteAll(long boardId) throws DataAccessException;
+
+    boolean deleteByClientId(long boardId, String clientId) throws DataAccessException;
 }

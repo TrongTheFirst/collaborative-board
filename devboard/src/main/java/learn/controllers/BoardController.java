@@ -50,9 +50,16 @@ public class BoardController {
     }
     @PostMapping("/add")
     public ResponseEntity<?> addBoard(@RequestBody Board board, Authentication auth) throws DataAccessException {
-        //both anonymous and logged-in users are allowed to add boards
-        if(authHelper.boardOwnerExistsAndAuthUserIsNotTheSame(board.getOwnerId(), auth)){
-            return new ResponseEntity<>("Owner and User are not the same",HttpStatus.FORBIDDEN);
+        User user = authHelper.getUserFromAuth(auth);
+
+        if (user == null) {
+            if (board.getOwnerId() != 0) {
+                return new ResponseEntity<>("Can only create ownerless boards while logged out", HttpStatus.FORBIDDEN);
+            }
+        } else {
+            if (board.getOwnerId() != user.getId()) {
+                return new ResponseEntity<>("Cannot create a board for another user", HttpStatus.FORBIDDEN);
+            }
         }
 
         Result<Board> result = service.create(board);
@@ -66,9 +73,18 @@ public class BoardController {
 
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteBoard(@RequestBody BoardRequest boardRequest, Authentication auth) throws DataAccessException {
-        //both anonymous and logged-in users are allowed to delete boards
-        if(authHelper.boardOwnerExistsAndAuthUserIsNotTheSame(boardRequest.ownerId(), auth)){
-            return new ResponseEntity<>("Owner and User are not the same",HttpStatus.FORBIDDEN);
+        User user = authHelper.getUserFromAuth(auth);
+        if (user == null) {
+            return new ResponseEntity<>("Authentication required", HttpStatus.UNAUTHORIZED);
+        }
+
+        Board existingBoard = service.findById(boardRequest.boardId());
+        if (existingBoard == null) {
+            return new ResponseEntity<>("Board not found", HttpStatus.NOT_FOUND);
+        }
+
+        if (existingBoard.getOwnerId() != user.getId()) {
+            return new ResponseEntity<>("Cannot delete another user's board", HttpStatus.FORBIDDEN);
         }
 
         Result<Board> result = service.delete(boardRequest.boardId());

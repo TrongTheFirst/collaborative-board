@@ -128,7 +128,6 @@ export function BoardProvider({ children }) {
         setBoard(toUpdate)
     }
     async function addDrawing(boardElement){
-        // setBoardDrawings(drawing);
         try{
             const response = await fetch(BASE_URL+`/element/add`,{
                 method:"POST",
@@ -142,8 +141,35 @@ export function BoardProvider({ children }) {
             console.error("Failed to add drawing", error);
         }
     }
-    async function deleteBoardElements(){
-
+    async function deleteDrawingByClientId(clientId){
+        const token = localStorage.getItem("token");
+        try{
+            const response = await fetch(BASE_URL+`/element/delete/${boardId}/${clientId}`,{
+                method:"DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to delete element: ${response.status}`);
+            }
+        }catch(error){
+            console.error("Failed to delete element", error);
+        }
+    }
+    async function deleteAllBoardElements(){
+        const token = localStorage.getItem("token");
+        try{
+            const response = await fetch(BASE_URL+`/element/delete/${boardId}`,{
+                method:"DELETE",
+                headers :{
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to delete board elements: ${response.status}`);
+            }
+        }catch(error){
+            console.error("Failed to delete board elements", error);
+        }
     }
 
     function setBoardDrawings(drawing){
@@ -151,6 +177,13 @@ export function BoardProvider({ children }) {
             const newDrawings = [...prevState, drawing];
             localStorage.setItem("drawings",JSON.stringify(newDrawings));
             return newDrawings;
+        });
+    }
+    function removeDrawingByClientId(clientId){
+        setDrawings((prevState) => {
+            const filtered = prevState.filter((d) => d.clientId !== clientId);
+            localStorage.setItem("drawings", JSON.stringify(filtered));
+            return filtered;
         });
     }
 
@@ -183,6 +216,7 @@ export function BoardProvider({ children }) {
 
     function loadBoard(boardId){
         setBoardId(boardId);
+        localStorage.setItem("boardId",boardId);
         fetchBoardElements(boardId);
         fetchBoard(boardId);
     }
@@ -204,6 +238,9 @@ export function BoardProvider({ children }) {
                 setBoardDrawings,
                 addDrawing,
                 clearDrawings,
+                deleteAllBoardElements,
+                deleteDrawingByClientId,
+                removeDrawingByClientId,
             }}
         >
             {children}

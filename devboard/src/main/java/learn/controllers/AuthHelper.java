@@ -22,11 +22,11 @@ public class AuthHelper {
         }
         return user;
     }
-
     public boolean boardOwnerExistsAndAuthUserIsNotTheSame(long ownerId, Authentication auth) throws DataAccessException {
+        if (ownerId == 0) {
+            return false; // unowned board — anyone, including anonymous, may act on it
+        }
         User user = getUserFromAuth(auth);
-        return user!=null
-                && ownerId != 0
-                && ownerId != user.getId();
+        return user == null || ownerId != user.getId();
     }
 }

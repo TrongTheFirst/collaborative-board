@@ -75,6 +75,19 @@ public class BoardElementJdbcClientRepository implements BoardElementRepository 
         """;
         return  jdbcClient.sql(sql)
                 .param(boardId)
-                .update() == 1;
+                .update() > 0;
+    }
+
+    @Override
+    public boolean deleteByClientId(long boardId, String clientId) throws DataAccessException {
+        final String sql = """
+            delete from board_element
+            where board_id = ?
+            and element_data->>'$.clientId' = ?
+            """;
+        return jdbcClient.sql(sql)
+                .param(boardId)
+                .param(clientId)
+                .update() > 0;
     }
 }

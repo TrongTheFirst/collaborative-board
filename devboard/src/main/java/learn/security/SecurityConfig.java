@@ -42,6 +42,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/user/**").permitAll()//allows access to account creation and login
                         .requestMatchers("/api/board/user/**").authenticated()
                         .requestMatchers("/api/board/**").permitAll()
+//                        .requestMatchers(HttpMethod.GET,"/api/element/**").permitAll()
+//                        .requestMatchers(HttpMethod.POST,"/api/element/**").permitAll()
                         .requestMatchers("/api/element/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated())//every other request requires authentication
