@@ -35,7 +35,7 @@ public class BoardWebSocketController {
         String replyTopic = "/topic/reply/" + request.clientId();
 
         if (!result.isSuccess()) {
-            messagingTemplate.convertAndSend(replyTopic, new CreateRoomResponse(false, result.getErrorMessages(), null,null));
+            messagingTemplate.convertAndSend(replyTopic, new CreateRoomResponse(false, result.getErrorMessages(), null));
             return;
         }
         BoardMember member = new BoardMember(
@@ -48,12 +48,12 @@ public class BoardWebSocketController {
         );
         Result<BoardMember> memberResult = memberService.add(member);
         if(!memberResult.isSuccess()){
-            messagingTemplate.convertAndSend(replyTopic, new CreateRoomResponse(false, memberResult.getErrorMessages(), null,null));
+            messagingTemplate.convertAndSend(replyTopic, new CreateRoomResponse(false, memberResult.getErrorMessages(), null));
             return;
         }
 
         messagingTemplate.convertAndSend(replyTopic,
-                new CreateRoomResponse(true, null, memberResult.getPayload().getRoomCode(),member));
+                new CreateRoomResponse(true, null, memberResult.getPayload()));
     }
 
     @MessageMapping("/room/join")
@@ -75,12 +75,14 @@ public class BoardWebSocketController {
             messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(false, result.getErrorMessages(), null,null,null, null));
             return;
         }
+        BoardMember savedMember = result.getPayload();
+
         Room room = roomService.findByRoomCode(request.roomCode());
 
         List<BoardElement> boardElements = elementService.findAllFromBoardId(room.getBoardId());
         List<BoardMember> members = memberService.findByRoomCode(request.roomCode());
-        messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(true, null, room.getBoardId(), boardElements, result.getPayload(), members));
-        messagingTemplate.convertAndSend("/topic/room/" + request.roomCode() + "/joined",result.getPayload());
+        messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(true, null, room.getBoardId(), boardElements, savedMember, members));
+        messagingTemplate.convertAndSend("/topic/room/" + request.roomCode() + "/joined",savedMember);
     }
 
     @MessageMapping("/room/end")

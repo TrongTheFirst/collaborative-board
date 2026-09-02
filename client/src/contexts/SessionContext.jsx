@@ -113,15 +113,15 @@ export function SessionProvider({children}) {
             console.log(`Subscribed to: `,replyTopic);
 
             const replySub = stompClient.current.subscribe(replyTopic, (message) => {
-                const { success, errors, roomCode: newRoomCode, member } = JSON.parse(message.body);
+                const { success, errors, member } = JSON.parse(message.body);
                 if (!success) {
                     console.log(error);
                 } else {
                     host.current = true;
                     sessionDisplayName.current = member.displayName;
                     setCollaborators((prev)=>[...prev, member]);
-                    subscribeToRoom(newRoomCode, subReq.onNewDrawing, subReq.onErase, subReq.onRoomEnd)
-                    navigate(`/room/${newRoomCode}`);
+                    subscribeToRoom(member.roomCode, subReq.onNewDrawing, subReq.onErase, subReq.onRoomEnd)
+                    navigate(`/room/${member.roomCode}`);
                 }
                 replySub.unsubscribe();
             });
@@ -156,10 +156,10 @@ export function SessionProvider({children}) {
 
         joinRoomSubscription.current = stompClient.current.subscribe(replyTopic+"/joined", (message) => {
             const person = JSON.parse(message.body);
-            console.log("new person: ", person);
-            if(person){
-                setCollaborators((prev)=>[...prev, person]);
-            }
+            setCollaborators((prev) => {
+                const exists = prev.some((p) => p.id === person.id);
+                return exists ? prev : [...prev, person];
+            });
         })
 
         roomEndedSubscription.current = stompClient.current.subscribe(replyTopic+"/ended", (message) => {
