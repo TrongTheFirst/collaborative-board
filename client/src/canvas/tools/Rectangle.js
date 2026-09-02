@@ -1,5 +1,5 @@
 export const RECTANGLE_STYLE = {
-    roughness: 0.5,
+    roughness: 0,
     strokeColor: "#000000",
     strokeWidth: 2,
     strokeStyle: "solid",
@@ -13,6 +13,7 @@ function toRoughOptions(drawing) {
         strokeWidth: drawing.strokeWidth ?? RECTANGLE_STYLE.strokeWidth,
         strokeStyle: drawing.strokeStyle ?? RECTANGLE_STYLE.strokeStyle,
         roundness: drawing.roundness ?? RECTANGLE_STYLE.roundness,
+        seed: drawing.seed
     };
 }
 
@@ -55,7 +56,9 @@ export function createRectangleTool(previewRc, previewCanvas){
         isDrawing = false;
 
         return {
+            clientId: crypto.randomUUID(),
             type:"rectangle",
+            seed: Math.floor(Math.random() * 2 ** 31),
             x: Math.min(starting.x, ending.x),
             y: Math.min(starting.y, ending.y),
             width: Math.abs(ending.x - starting.x),

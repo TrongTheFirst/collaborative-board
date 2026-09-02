@@ -1,16 +1,17 @@
-import { Hand, MousePointer2, Shapes, Pencil, Type, Eraser, ChevronDown, Trash} from "lucide-react";
-import { useAuth } from "../contexts/AuthContext.jsx";
+import { Hand, MousePointer2, Square, Circle, Minus, MoveRight, Pencil, Type, Eraser, ChevronDown, Trash} from "lucide-react";
 
 function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeTool, setActiveTool }) {
     const tools = [
-        { icon: Hand, label: "Hand", tool: null },
-        { icon: MousePointer2, label: "Pointer", tool: null },
+        { icon: Hand, label: "Hand", tool: "hand" },
+        { icon: MousePointer2, label: "Pointer", tool: "pointer" },
+        { icon: Square, label: "Rectangle", tool: "rectangle" },
+        { icon: Circle, label: "Ellipse", tool: "ellipse" },
+        { icon: Minus, label: "Line", tool: "line" },
+        { icon: MoveRight, label: "Arrow", tool: "arrow" },
         { icon: Pencil, label: "Pencil", tool: "pencil" },
         { icon: Type, label: "Text", tool: "text" },
-        { icon: Eraser, label: "Erase", tool: null },
+        { icon: Eraser, label: "Erase", tool: "eraser" },
     ];
-
-    const {token} = useAuth();
 
     function toolButtonClasses(tool) {
         const isActive = tool !== null && tool === activeTool;
@@ -27,7 +28,6 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                         <button
                             key={label}
                             aria-label={label}
-                            disabled={tool === null}
                             className={toolButtonClasses(tool)}
 
                         >
@@ -37,17 +37,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
 
                     <div className="w-px h-6 bg-gray-200 mx-1" />
 
-                    <button
-                        aria-label="Shape"
-                        onClick={() => setActiveTool("rectangle")}
-                        className={`gap-0.5 px-2 h-10 art-button ${activeTool === "rectangle" ? "bg-gray-300 text-gray-900" : ""}`}
-                    >
-                        <Shapes size={18} strokeWidth={1.75} />
-                        <ChevronDown size={14} strokeWidth={1.75} />
-                    </button>
-
-
-                    {tools.slice(2,5).map(({ icon: Icon, label, tool }) => (
+                    {tools.slice(2,9).map(({ icon: Icon, label, tool }) => (
                         <button
                             key={label}
                             aria-label={label}
@@ -57,6 +47,18 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                             <Icon size={18} strokeWidth={1.75} />
                         </button>
                     ))}
+                    <div className="w-px h-6 bg-gray-200 mx-1" />
+                    {tools.slice(9,10).map(({ icon: Icon, label, tool }) => (
+                        <button
+                            key={label}
+                            aria-label={label}
+                            onClick={tool ? () => setActiveTool(tool) : undefined}
+                            className={toolButtonClasses(tool)}
+                        >
+                            <Icon size={18} strokeWidth={1.75} />
+                        </button>
+                    ))}
+
                     <div className="group relative">
                         <button
                             aria-label="Trash"
@@ -64,7 +66,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                             onClick={() => {
                                 clearDrawings();
                                 clearCanvas();
-                                deleteAllBoardElements(token);
+                                deleteAllBoardElements();
                             }}
                         >
                             <Trash size={18} strokeWidth={1.75}/>

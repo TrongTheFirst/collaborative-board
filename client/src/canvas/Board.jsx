@@ -11,6 +11,9 @@ import CreateModal from "../users/CreateModal.jsx"
 import { createPencilTool, drawPencilElement } from "./tools/Pencil.js";
 import { createTextTool, drawTextElement, TEXT_STYLE} from "./tools/Text.js";
 import { createRectangleTool, drawRectangleElement } from "./tools/Rectangle.js";
+import { createEllipseTool, drawEllipseElement } from "./tools/Ellipse.js";
+import { createLineTool, drawLineElement } from "./tools/Line.js"
+import { createEraserTool } from "./tools/Eraser.js";
 
 function Board(){
     const [openCollabModal, setOpenCollabModal] = useState(false);
@@ -20,16 +23,19 @@ function Board(){
     const [textInput, setTextInput] = useState(null);
 
     const {sendDrawing, inSession, connectToRoom} = useSession();
-    const {drawings, addDrawing, clearDrawings, deleteAllBoardElements,
+    const {drawings, addDrawing, clearDrawings,
+        deleteAllBoardElements, deleteDrawingByClientId, removeDrawingByClientId,
         setBoardDrawings, drawingsLoaded, boardId} = useBoard();
 
     const canvasRef = useRef(null);
     const previewCanvasRef = useRef(null);
+    const previewRcRef = useRef(null);
     const drawingsRef = useRef(drawings);
     const pageInitializedRef = useRef(false);
     const drawingsCountRef = useRef(0);
     const textAreaRef = useRef(null);
     const activeToolRef = useRef(activeTool);
+
 
     function clearCanvas(){
         const ctx = canvasRef.current.getContext("2d");
@@ -46,6 +52,12 @@ function Board(){
                 break;
             case "rectangle":
                 drawRectangleElement(canvas, drawing);
+                break;
+            case "ellipse":
+                drawEllipseElement(canvas, drawing);
+                break;
+            case "line":
+                drawLineElement(canvas, drawing);
                 break;
             default:
                 console.warn(`No renderer for element type "${drawing.type}"`);
@@ -97,34 +109,6 @@ function Board(){
         }
     }, [textInput]);
 
-    function commitText() {
-        const value = textAreaRef.current?.value.trim();
-        const box = textInput;
-        setTextInput(null);
-
-        if (!value || !box) return;
-
-        const drawing = {
-            type: "text",
-            x: box.x,
-            y: box.y,
-            width: box.width,
-            height: box.height,
-            text: value,
-            ...TEXT_STYLE,
-        };
-
-        const {type, ...elementData} = drawing;
-        const boardElement = { elementId: 0, boardId, type, elementData };
-        if (inSession()) {
-            sendDrawing(boardElement);
-        } else {
-            addDrawing(boardElement);
-            drawingsCountRef.current += 1;
-            setBoardDrawings(drawing);
-        }
-    }
-
     useEffect(() => {
         const canvas = canvasRef.current;
         const rc = rough.canvas(canvas);
@@ -136,7 +120,10 @@ function Board(){
         const pencil = createPencilTool(rc);
         const text = createTextTool(previewRc, previewCanvas, setTextInput);
         const rectangle = createRectangleTool(previewRc, previewCanvas);
-        const tools = { pencil, rectangle, text };
+        const ellipse = createEllipseTool(previewRc, previewCanvas);
+        const line = createLineTool(previewRc, previewCanvas);
+        const eraser = createEraserTool(previewRc, previewCanvas, drawings);
+        const tools = { pencil, rectangle, ellipse, line, text, eraser};
         const getActiveTool = () => tools[activeToolRef.current] ?? pencil;
 
         const resize = () => {
@@ -151,6 +138,8 @@ function Board(){
         const handlePointerDown = (e) => {
             canvas.setPointerCapture(e.pointerId);
             getActiveTool().onPointerDown(e);
+            // const pre_ctx = previewCanvasRef.current.getContext("2d");
+            // pre_ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         };
 
         const handlePointerMove = (e) => {
@@ -164,6 +153,15 @@ function Board(){
 
             const drawing = getActiveTool().onPointerUp(e);
             if (!drawing) return;
+
+            if(activeToolRef.current === "eraser") {
+                drawing.forEach(d => {
+                    deleteDrawingByClientId(d.clientId)
+                    removeDrawingByClientId(d.clientId);
+                    drawingsCountRef.current -= 1;
+                })
+                return;
+            }
 
             const {type, ...elementData} = drawing;
             const boardElement = {
@@ -193,6 +191,38 @@ function Board(){
             canvas.removeEventListener("pointerup", handlePointerUp);
         };
     }, [boardId, drawings]);
+
+    function commitText() {
+        const value = textAreaRef.current?.value.trim();
+        const box = textInput;
+        setTextInput(null);
+
+        const preCtx = previewCanvasRef.current.getContext("2d");
+        preCtx.clearRect(0, 0, previewCanvasRef.current.width, previewCanvasRef.current.height);
+
+        if (!value || !box) return;
+
+        const drawing = {
+            clientId: crypto.randomUUID(),
+            type: "text",
+            x: box.x,
+            y: box.y,
+            width: box.width,
+            height: box.height,
+            text: value,
+            ...TEXT_STYLE,
+        };
+
+        const {type, ...elementData} = drawing;
+        const boardElement = { elementId: 0, boardId, type, elementData };
+        if (inSession()) {
+            sendDrawing(boardElement);
+        } else {
+            addDrawing(boardElement);
+            drawingsCountRef.current += 1;
+            setBoardDrawings(drawing);
+        }
+    }
 
     function handleTextAreaInput(e) {
         const textarea = e.target;
@@ -228,11 +258,13 @@ function Board(){
                     onInput={handleTextAreaInput}
                     style={{
                         position: "fixed",
-                        left: textInput.x,
+                        left: textInput.x+3,
                         top: textInput.y,
                         width: textInput.width,
                         height: textInput.height,
                         font: `${TEXT_STYLE.fontWeight} ${TEXT_STYLE.fontSize} ${TEXT_STYLE.fontStyle}`,
+                        padding: "5px",
+                        outline: "none",
                     }}
                 />
             )}

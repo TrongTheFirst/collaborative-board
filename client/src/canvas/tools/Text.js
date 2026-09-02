@@ -9,7 +9,8 @@ export function drawTextElement(ctx, drawing){
     const fontSize = drawing.fontSize ?? TEXT_STYLE.fontSize;
     ctx.fillStyle = drawing.fillStyle ?? TEXT_STYLE.fillStyle;
     ctx.font = `${drawing.fontWeight ?? TEXT_STYLE.fontWeight} ${fontSize} ${drawing.fontStyle ?? TEXT_STYLE.fontStyle}`;
-    ctx.fillText(drawing.text, drawing.x, drawing.y + parseInt(fontSize));
+
+    ctx.fillText(drawing.text, drawing.x, drawing.y);
 }
 
 const MIN_WIDTH = 60;
@@ -38,7 +39,7 @@ export function createTextTool(previewRc, previewCanvas, onPlace){
             roughness: 0.5,
             stoke: 'rgba(255, 255, 255, 0.5)',
             strokeWidth: 2,
-            strokeStyle: "dotted",
+            strokeStyle: "dashed",
             roundness: null,
         });
     }
@@ -58,9 +59,6 @@ export function createTextTool(previewRc, previewCanvas, onPlace){
     function onPointerUp(e){
         if(!isWriting) return null;
         isWriting = false;
-
-        // const ctx = previewCanvas.getContext("2d");
-        // ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
 
         onPlace(getTextBox());
         return null;

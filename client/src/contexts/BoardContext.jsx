@@ -141,34 +141,35 @@ export function BoardProvider({ children }) {
             console.error("Failed to add drawing", error);
         }
     }
-    // async function deleteBoardElement(){
-    //     try{
-    //         const response = await fetch(BASE_URL+`/element/delete`,{
-    //             method:"POST",
-    //             headers: {"Content-Type": "application/json"},
-    //             body: JSON.stringify(boardElement)
-    //         });
-    //         if (!response.ok) {
-    //             throw new Error(`Failed to save drawing: ${response.status}`);
-    //         }
-    //     }catch(error){
-    //         console.error("Failed to add drawing", error);
-    //     }
-    // }
-    async function deleteAllBoardElements(token){
-            try{
-                const response = await fetch(BASE_URL+`/element/delete/${boardId}`,{
-                    method:"DELETE",
-                    headers :{
-                        "Authorization": `Bearer ${token}`
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error(`Failed to delete board elements: ${response.status}`);
-                }
-            }catch(error){
-                console.error("Failed to delete board elements", error);
+    async function deleteDrawingByClientId(clientId){
+        const token = localStorage.getItem("token");
+        try{
+            const response = await fetch(BASE_URL+`/element/delete/${boardId}/${clientId}`,{
+                method:"DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to delete element: ${response.status}`);
             }
+        }catch(error){
+            console.error("Failed to delete element", error);
+        }
+    }
+    async function deleteAllBoardElements(){
+        const token = localStorage.getItem("token");
+        try{
+            const response = await fetch(BASE_URL+`/element/delete/${boardId}`,{
+                method:"DELETE",
+                headers :{
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to delete board elements: ${response.status}`);
+            }
+        }catch(error){
+            console.error("Failed to delete board elements", error);
+        }
     }
 
     function setBoardDrawings(drawing){
@@ -176,6 +177,13 @@ export function BoardProvider({ children }) {
             const newDrawings = [...prevState, drawing];
             localStorage.setItem("drawings",JSON.stringify(newDrawings));
             return newDrawings;
+        });
+    }
+    function removeDrawingByClientId(clientId){
+        setDrawings((prevState) => {
+            const filtered = prevState.filter((d) => d.clientId !== clientId);
+            localStorage.setItem("drawings", JSON.stringify(filtered));
+            return filtered;
         });
     }
 
@@ -231,6 +239,8 @@ export function BoardProvider({ children }) {
                 addDrawing,
                 clearDrawings,
                 deleteAllBoardElements,
+                deleteDrawingByClientId,
+                removeDrawingByClientId,
             }}
         >
             {children}

@@ -1,7 +1,8 @@
 export const PENCIL_STYLE = {
-    roughness: 0.5,
+    roughness: 0,
     strokeColor: "#000000",
     strokeWidth: 2,
+    seed: Math.floor(Math.random() * 2 ** 31),
 };
 
 export function drawPencilElement(rc, drawing) {
@@ -14,6 +15,7 @@ export function drawPencilElement(rc, drawing) {
         roughness: drawing.roughness ?? PENCIL_STYLE.roughness,
         stroke: drawing.strokeColor ?? PENCIL_STYLE.strokeColor,
         strokeWidth: drawing.strokeWidth ?? PENCIL_STYLE.strokeWidth,
+        seed: drawing.seed
     });
 }
 
@@ -56,7 +58,9 @@ export function createPencilTool(rc) {
         if (points.length === 0) return null;
 
         return {
+            clientId: crypto.randomUUID(),
             type: "freedraw",
+            seed: Math.floor(Math.random() * 2 ** 31),
             x: starting.x,
             y: starting.y,
             points,

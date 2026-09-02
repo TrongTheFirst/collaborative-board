@@ -68,6 +68,15 @@ public class BoardElementService {
         return result;
     }
 
+
+    public Result<BoardElement> deleteByClientId(long boardId, String clientId) throws DataAccessException {
+        Result<BoardElement> result = new Result<>();
+        if(!repository.deleteByClientId(boardId, clientId)){
+            result.addErrorMessage("Board element %s was not found", ResultType.NOT_FOUND, clientId);
+        }
+        return result;
+    }
+
     private void validateElementData(JsonNode elementData, Result<BoardElement> result) throws DataAccessException {
         if(elementData == null){
             result.addErrorMessage("Board element data cannot be null", ResultType.INVALID);
