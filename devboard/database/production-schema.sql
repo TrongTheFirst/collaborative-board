@@ -28,7 +28,6 @@ create table board_element(
 	board_id bigint not null,
 	`type` varchar(50) not null,
 	element_data JSON not null,
-	client_id varchar(36) null,
 	
 	constraint board_element_board
 		foreign key(board_id)
@@ -43,8 +42,9 @@ create table `role`(
 );
 
 create table room(
-	room_code varchar(50) not null primary key,
+	room_code varchar(50) primary key,
 	board_id bigint not null,
+	host_client_id varchar(50) not null,
 	created_at timestamp not null,
 	
 	constraint room_board
@@ -52,18 +52,16 @@ create table room(
 		references board(board_id)
 );
 
-
-
 create table board_members(
 	id bigint primary key auto_increment,
 	user_id bigint not null,
-	board_id bigint not null,
+	room_code varchar(50) not null,
 	role_id int not null default 1,
 	joined_at timestamp not null,
 	
-	constraint board_members_board
-		foreign key(board_id)
-		references board(board_id),
+	constraint board_members_room
+		foreign key(room_code)
+		references room(room_code),
 		
 	constraint board_members_user
 		foreign key(user_id)
@@ -73,3 +71,4 @@ create table board_members(
 		foreign key(role_id)
 		references `role` (role_id)
 );
+

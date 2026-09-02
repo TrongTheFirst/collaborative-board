@@ -16,7 +16,7 @@ public class RoomJdbcClientRepository implements RoomRepository {
     @Override
     public Room findByRoomCode(String roomCode) throws DataAccessException {
         final String sql = """
-                select room_code, board_id, created_at
+                select room_code, board_id, host_client_id, created_at
                 from room
                 where room_code = ?;
                 """;
@@ -30,13 +30,14 @@ public class RoomJdbcClientRepository implements RoomRepository {
     @Override
     public Room create(Room room) throws DataAccessException {
         final String sql = """
-                insert into room (room_code, board_id, created_at) values
-                (:room_code, :board_id, :created_at);
+                insert into room (room_code, board_id, host_client_id, created_at) values
+                (:room_code, :board_id, :host_client_id, :created_at);
                 """;
 
         int rowsAffected = jdbcClient.sql(sql)
                 .param("room_code", room.getRoomCode())
                 .param("board_id", room.getBoardId())
+                .param("host_client_id", room.getHostClientId())
                 .param("created_at", room.getCreatedAt())
                 .update();
 

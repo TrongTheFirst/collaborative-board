@@ -13,5 +13,6 @@ import java.time.LocalDateTime;
 public class Room {
     private String roomCode;
     private long boardId;
+    private String hostClientId;
     private LocalDateTime createdAt;
 }

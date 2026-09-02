@@ -23,7 +23,7 @@ public class RoomService {
         return repository.findByRoomCode(roomCode);
     }
 
-    public Result<Room> createForBoard(long boardId) throws DataAccessException {
+    public Result<Room> createForBoard(long boardId, String hostClientId) throws DataAccessException {
         Result<Room> result = new Result<>();
 
         if (boardRepository.findById(boardId) == null) {
@@ -37,7 +37,7 @@ public class RoomService {
             return result;
         }
 
-        Room room = new Room(roomCode, boardId, LocalDateTime.now());
+        Room room = new Room(roomCode, boardId, hostClientId, LocalDateTime.now());
         Room created = repository.create(room);
 
         if (created == null) {

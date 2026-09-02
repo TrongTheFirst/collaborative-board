@@ -14,7 +14,7 @@ const BoardContext = createContext(null);
 export function BoardProvider({ children }) {
 
     const { userId, BASE_URL } = useAuth();
-    const { connectToRoom, isInRoom } = useSession();
+    const { connectToRoom, disconnectFromRoom, isInRoom } = useSession();
     const [drawings,setDrawings] = useState([]);
     const [drawingsLoaded, setDrawingsLoaded] = useState(false);
     const currentBoard = useRef(null);
@@ -28,7 +28,11 @@ export function BoardProvider({ children }) {
                 setBoardId(boardId);
                 setBoardState(fetchedDrawings);
             }
-            connectToRoom(roomCode, onReply, setBoardDrawings);
+            const onRoomEnd = () => {
+                disconnectFromRoom();
+                clearBoard();
+            };
+            connectToRoom(roomCode, onReply, setBoardDrawings, removeDrawingByClientId, onRoomEnd);
         }
     },[roomCode])
 

@@ -36,6 +36,7 @@ create table board_element(
 create table room(
 	room_code varchar(50) not null primary key,
 	board_id bigint not null,
+	host_client_id varchar(50) not null,
 	created_at timestamp not null,
 	
 	constraint room_board
@@ -53,13 +54,13 @@ create table `role`(
 create table board_members(
 	id bigint primary key auto_increment,
 	user_id bigint not null,
-	board_id bigint not null,
+	room_code varchar(50) not null,
 	role_id int not null default 1,
 	joined_at timestamp not null,
 	
-	constraint board_members_board
-		foreign key(board_id)
-		references board(board_id),
+	constraint board_members_room
+		foreign key(room_code)
+		references room(room_code),
 		
 	constraint board_members_user
 		foreign key(user_id)

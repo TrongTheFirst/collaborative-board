@@ -7,9 +7,11 @@ const SessionContext = createContext(null);
 export function SessionProvider({children}) {
     const stompClient = useRef(null);
     const subscription = useRef(null);
+    const roomEndedSubscription = useRef(null);
     const pendingOnConnectActions = useRef([]);
     const roomCode = useRef(null);
     const clientId = useRef(null);
+    const host = useRef(null);
 
     const navigate = useNavigate();
     const [sessionConnected, setSessionConnected] = useState(false);
@@ -53,22 +55,9 @@ export function SessionProvider({children}) {
         });
     }
 
-    // useEffect(() => {
-    //     return () => {
-    //         console.log("SessionProvider unmounting");
-    //
-    //         unsubscribe();
-    //
-    //         if (stompClient.current && stompClient.current.active) {
-    //             console.log("Deactivating STOMP client during cleanup");
-    //             stompClient.current.deactivate();
-    //         }
-    //
-    //     };
-    // }, []);
 
 
-    function connectToRoom(newRoomCode, onReply, onNewDrawing){
+    function connectToRoom(newRoomCode, onReply, onNewDrawing, onErase, onRoomEnd){
         console.log("Calling connectToRoom...")
         if (!stompClient.current) {
             console.log("Stomp client null. Leaving connectToRoom...")
@@ -86,22 +75,23 @@ export function SessionProvider({children}) {
                 let { success, error, boardId, elements } = JSON.parse(message.body);
                 if (!success) {
                     console.error(error);
+                    navigate("/")
                 } else {
                     elements = elements.map(element => ({ type: element.type, ...element.elementData }));
                     onReply(boardId, elements);
-                    subscribeToRoom(newRoomCode, onNewDrawing);
+                    subscribeToRoom(newRoomCode, onNewDrawing, onErase, onRoomEnd);
                     setSessionConnected(true);
                 }
                 replySub.unsubscribe();
             });
 
-            sendMessage("/app/join", { clientId: clientId.current, roomCode: newRoomCode });
+            sendMessage("/app/room/join", { clientId: clientId.current, roomCode: newRoomCode });
         }
 
         delayOnConnectDo(sendJoinRequest);
     }
 
-    function createRoom(boardId, onNewDrawing) {
+    function createRoom(boardId, onNewDrawing, onErase) {
         if (!stompClient.current) return;
 
         activateClient();
@@ -117,35 +107,50 @@ export function SessionProvider({children}) {
                 if (!success) {
                     console.log(error);
                 } else {
-                    subscribeToRoom(newRoomCode, onNewDrawing); // set roomCode.current NOW
+                    host.current = true;
+                    // subscribeToRoom(newRoomCode, onNewDrawing, onErase); // set roomCode.current NOW
                     navigate(`/room/${newRoomCode}`);
                 }
                 replySub.unsubscribe();
             });
 
-            sendMessage("/app/create", { clientId: clientId.current, boardId });
+            sendMessage("/app/room/create", { clientId: clientId.current, boardId });
         }
 
         delayOnConnectDo(sendCreateRequest);
     }
 
-    function subscribeToRoom(newRoomCode, onNewDrawing){
+    function subscribeToRoom(newRoomCode, onNewDrawing, onErase, onRoomEnd){
         unsubscribe();
         roomCode.current = newRoomCode;
         const replyTopic = `/topic/room/${newRoomCode}`;
 
         subscription.current = stompClient.current.subscribe(replyTopic, (message) => {
-            const { success, error, element } = JSON.parse(message.body);
+            const { success, type, error, payload } = JSON.parse(message.body);
             if (!success) {
                 console.error(error);
-            } else {
-                const drawing = { type: element.type, ...element.elementData };
+            } else if(type === "add"){
+                const drawing = { type: payload.type, ...payload.elementData };
                 onNewDrawing(drawing);
+            }else if(type === "erase"){
+                onErase(payload);
             }
         });
+
+        roomEndedSubscription.current = stompClient.current.subscribe(replyTopic+"/ended", () => {
+            if(!host.current){
+                console.log("Host ended room");
+                onRoomEnd();
+                navigate("/");
+            }
+        })
     }
 
     const disconnectFromRoom = () => {
+        if(host.current){
+            endRoom();
+            host.current = false;
+        }
         unsubscribe();
         deactivateClient();
         roomCode.current = null;
@@ -178,11 +183,21 @@ export function SessionProvider({children}) {
     function sendDrawing(boardElement){
         sendMessage(`/app/room/${roomCode.current}`, boardElement);
     }
+    function sendErase(boardId, elementClientId){
+        sendMessage(`/app/room/${roomCode.current}/delete`, {boardId, elementClientId});
+    }
+    function endRoom(){
+        sendMessage(`/app/room/end`,{clientId:clientId.current, roomCode:roomCode.current});
+    }
 
     function unsubscribe(){
         if (subscription.current) {
             subscription.current.unsubscribe();
             subscription.current = null;
+        }
+        if (roomEndedSubscription.current) {
+            roomEndedSubscription.current.unsubscribe();
+            roomEndedSubscription.current = null;
         }
     }
 
@@ -220,6 +235,7 @@ export function SessionProvider({children}) {
             connectToRoom,
             disconnectFromRoom,
             sendDrawing,
+            sendErase,
             createRoom
         }}>
             {children}

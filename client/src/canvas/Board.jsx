@@ -22,7 +22,7 @@ function Board(){
     const [activeTool, setActiveTool] = useState("pencil");
     const [textInput, setTextInput] = useState(null);
 
-    const {sendDrawing, inSession, connectToRoom} = useSession();
+    const {sendDrawing, sendErase, inSession, connectToRoom} = useSession();
     const {drawings, addDrawing, clearDrawings,
         deleteAllBoardElements, deleteDrawingByClientId, removeDrawingByClientId,
         setBoardDrawings, drawingsLoaded, boardId} = useBoard();
@@ -156,9 +156,13 @@ function Board(){
 
             if(activeToolRef.current === "eraser") {
                 drawing.forEach(d => {
-                    deleteDrawingByClientId(d.clientId)
-                    removeDrawingByClientId(d.clientId);
-                    drawingsCountRef.current -= 1;
+                    if(inSession()){
+                        sendErase(boardId, d.clientId);
+                    }else{
+                        deleteDrawingByClientId(d.clientId);
+                        removeDrawingByClientId(d.clientId);
+                        drawingsCountRef.current -= 1;
+                    }
                 })
                 return;
             }

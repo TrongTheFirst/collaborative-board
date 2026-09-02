@@ -7,7 +7,6 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
         { icon: Square, label: "Rectangle", tool: "rectangle" },
         { icon: Circle, label: "Ellipse", tool: "ellipse" },
         { icon: Minus, label: "Line", tool: "line" },
-        { icon: MoveRight, label: "Arrow", tool: "arrow" },
         { icon: Pencil, label: "Pencil", tool: "pencil" },
         { icon: Type, label: "Text", tool: "text" },
         { icon: Eraser, label: "Erase", tool: "eraser" },
@@ -37,7 +36,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
 
                     <div className="w-px h-6 bg-gray-200 mx-1" />
 
-                    {tools.slice(2,9).map(({ icon: Icon, label, tool }) => (
+                    {tools.slice(2,8).map(({ icon: Icon, label, tool }) => (
                         <button
                             key={label}
                             aria-label={label}
@@ -48,7 +47,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                         </button>
                     ))}
                     <div className="w-px h-6 bg-gray-200 mx-1" />
-                    {tools.slice(9,10).map(({ icon: Icon, label, tool }) => (
+                    {tools.slice(8,9).map(({ icon: Icon, label, tool }) => (
                         <button
                             key={label}
                             aria-label={label}

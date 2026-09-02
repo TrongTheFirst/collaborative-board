@@ -10,9 +10,11 @@ function OptionsBar({ setOpenCollabModal, setOpenLoginModal, setOpenCreateModal}
     const { isLoggedIn } = useAuth();
     const { clearBoard } = useBoard();
 
-    function handleDisconnect() {
+    function handleDisconnect(isHost) {
         disconnectFromRoom();
-        clearBoard();
+        if(!isHost) {
+            clearBoard();
+        }
     }
 
 

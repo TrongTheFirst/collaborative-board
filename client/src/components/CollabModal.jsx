@@ -3,11 +3,15 @@ import { useSession } from "../contexts/SessionContext.jsx";
 import {useBoard} from "../contexts/BoardContext.jsx"
 
 function CollabModal({ setOpenCollabModal }) {
-    const { connectToBoard, createRoom} = useSession();
-    const { boardId, setBoardDrawings } = useBoard();
+    const { connectToBoard, disconnectFromRoom, createRoom} = useSession();
+    const { boardId, setBoardDrawings, removeDrawingByClientId, clearBoard} = useBoard();
 
     function handleCollabButton() {
-        createRoom(boardId, setBoardDrawings);
+        const onRoomEnded = () => {
+            disconnectFromRoom();
+            clearBoard();
+        };
+        createRoom(boardId, setBoardDrawings, removeDrawingByClientId, onRoomEnded);
         setOpenCollabModal(false);
     }
 
