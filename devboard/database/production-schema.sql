@@ -46,6 +46,7 @@ create table room(
 	board_id bigint not null,
 	host_client_id varchar(50) not null,
 	created_at timestamp not null,
+	view_mode boolean not null default false,
 	
 	constraint room_board
 		foreign key(board_id)

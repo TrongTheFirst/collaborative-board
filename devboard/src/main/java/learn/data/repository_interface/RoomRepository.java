@@ -6,5 +6,8 @@ import learn.models.Room;
 public interface RoomRepository {
     Room findByRoomCode(String roomCode) throws DataAccessException;
     Room create(Room room) throws DataAccessException;
+
+    boolean update(Room room) throws DataAccessException;
+
     boolean delete(String roomCode) throws DataAccessException;
 }

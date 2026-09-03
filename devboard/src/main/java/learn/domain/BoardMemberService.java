@@ -4,6 +4,7 @@ import learn.data.DataAccessException;
 import learn.data.repository_interface.BoardMemberRepository;
 import learn.data.repository_interface.RoomRepository;
 import learn.models.BoardMember;
+import learn.models.Room;
 import lombok.AllArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,10 @@ public class BoardMemberService {
         return repository.findById(id);
     }
 
+    public BoardMember findByRoomCodeAndClientId(String roomCode, String clientId) throws DataAccessException {
+        return repository.findByRoomCodeAndClientId(roomCode,clientId);
+    }
+
     public Result<BoardMember> add(BoardMember boardMember) throws DataAccessException {
         Result<BoardMember> result = new Result<>();
 
@@ -45,8 +50,8 @@ public class BoardMemberService {
         if (!result.isSuccess()) {
             return result;
         }
-
-        if (roomRepository.findByRoomCode(boardMember.getRoomCode()) == null) {
+        Room room = roomRepository.findByRoomCode(boardMember.getRoomCode());
+        if (room == null) {
             result.addErrorMessage("Room %s was not found", ResultType.NOT_FOUND, boardMember.getRoomCode());
             return result;
         }

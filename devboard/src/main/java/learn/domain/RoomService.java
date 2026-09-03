@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -45,7 +46,7 @@ public class RoomService {
             return result;
         }
 
-        Room room = new Room(roomCode, boardId, hostClientId, LocalDateTime.now());
+        Room room = new Room(roomCode, boardId, hostClientId, LocalDateTime.now(), false);
         Room created = repository.create(room);
 
         if (created == null) {
@@ -54,6 +55,26 @@ public class RoomService {
         }
 
         result.setPayload(created);
+        return result;
+    }
+
+    public Result<Room> update(Room room) throws DataAccessException {
+        Room existing =  repository.findByRoomCode(room.getRoomCode());
+        Result<Room> result = new Result<>();
+        if(existing == null) {
+            result.addErrorMessage("Room %s was not found", ResultType.NOT_FOUND, room.getRoomCode());
+            return result;
+        }
+        if(!Objects.equals(room.getRoomCode(), existing.getRoomCode())
+        || room.getBoardId() != existing.getBoardId()
+        || !Objects.equals(room.getHostClientId(), existing.getHostClientId())
+        || !room.getCreatedAt().equals(existing.getCreatedAt())){
+            result.addErrorMessage("Can only change rules of room", ResultType.INVALID);
+        }
+        if(result.isSuccess()) {
+            repository.update(room);
+        }
+
         return result;
     }
 

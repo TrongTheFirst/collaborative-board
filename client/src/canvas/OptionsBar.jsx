@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { LogIn, Link2, Unlink, UserPlus} from "lucide-react";
+import { LogIn, Link2, Shell, UserPlus} from "lucide-react";
 import CollaboratorMenu from "./CollaboratorMenu.jsx"
 import { useSession } from "../contexts/SessionContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
@@ -32,8 +32,8 @@ function OptionsBar({ setOpenCollabStartModal, setOpenCollabEndModal, setOpenLog
                             onClick={()=>setOpenCollabEndModal(true)}
                             className="primary-button"
                         >
-                            <Unlink size={17} strokeWidth={1.75} />
-                            <span>Disconnect</span>
+                            <Shell size={17} strokeWidth={1.75} />
+                            <span>Session</span>
                         </button>
                     </>
 

@@ -6,7 +6,6 @@ import learn.domain.BoardMemberService;
 import learn.domain.Result;
 import learn.domain.RoomService;
 import learn.dtos.*;
-import learn.models.Board;
 import learn.models.BoardElement;
 import learn.models.BoardMember;
 import learn.models.Room;
@@ -74,7 +73,7 @@ public class BoardWebSocketController {
         String replyTopic = "/topic/reply/" + request.clientId();
 
         if (!result.isSuccess()) {
-            messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(false, result.getErrorMessages(), null,null,null, null));
+            messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(false, result.getErrorMessages(), null,false,null,null, null));
             return;
         }
         BoardMember savedMember = result.getPayload();
@@ -83,7 +82,7 @@ public class BoardWebSocketController {
 
         List<BoardElement> boardElements = elementService.findAllFromBoardId(room.getBoardId());
         List<BoardMember> members = memberService.findByRoomCode(request.roomCode());
-        messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(true, null, room.getBoardId(), boardElements, savedMember, members));
+        messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(true, null, room.getBoardId(), room.isViewMode() , boardElements, savedMember, members));
         messagingTemplate.convertAndSend("/topic/room/" + request.roomCode() + "/joined",
                 new MemberResponse("join",savedMember));
     }
@@ -119,8 +118,12 @@ public class BoardWebSocketController {
 
 
     @MessageMapping("/room/{roomCode}")
-    public void addBoardElement(@Payload BoardElement element, @DestinationVariable String roomCode) throws DataAccessException {
-        Result<BoardElement> result = elementService.add(element);
+    public void addBoardElement(@Payload BoardElementMessage message, @DestinationVariable String roomCode) throws DataAccessException {
+        Room room = roomService.findByRoomCode(roomCode);
+        if(room.isViewMode() && !room.getHostClientId().equals(message.sender())){
+            return;
+        }
+        Result<BoardElement> result = elementService.add(message.element());
 
         if (!result.isSuccess()) {
             messagingTemplate.convertAndSend("/topic/room/" + roomCode,
@@ -142,6 +145,19 @@ public class BoardWebSocketController {
         }
         messagingTemplate.convertAndSend("/topic/room/" + roomCode,
                 new RoomEraseResponse(true, "erase",null, req.elementClientId()));
+    }
+
+    @MessageMapping("/room/{roomCode}/rules")
+    public void setViewMode(@Payload RoomRuleMessage message, @DestinationVariable String roomCode) throws DataAccessException {
+        BoardMember host = memberService.findByRoomCodeAndClientId(roomCode, message.clientId());
+        if(host == null || host.getRoleId() != 2){
+            return;
+        }
+        Room room = roomService.findByRoomCode(roomCode);
+
+        room.setViewMode(message.ruleToggle());
+        Result<Room> result = roomService.update(room);
+        messagingTemplate.convertAndSend("/topic/room/" + roomCode+"/rules", message);
     }
 
 

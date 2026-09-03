@@ -1,4 +1,5 @@
 import { Hand, MousePointer2, Square, Circle, Minus, MoveRight, Pencil, Type, Eraser, ChevronDown, Trash} from "lucide-react";
+import { useSession } from "../contexts/SessionContext.jsx";
 
 function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeTool, setActiveTool }) {
     const tools = [
@@ -11,12 +12,13 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
         { icon: Type, label: "Text", tool: "text" },
         { icon: Eraser, label: "Erase", tool: "eraser" },
     ];
+    const { viewMode, isHost} = useSession();
 
     function toolButtonClasses(tool) {
         const isActive = tool !== null && tool === activeTool;
         return `art-button w-10 h-10 ${isActive ? "bg-gray-300 text-gray-900" : ""} ${
             tool === null ? "opacity-40 cursor-not-allowed" : ""
-        }`;
+        } ${viewMode && !isHost() ? "opacity-40 cursor-not-allowed hover:bg-transparent" : ""}`;
     }
 
     return (
@@ -27,6 +29,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                         <button
                             key={label}
                             aria-label={label}
+                            disabled={viewMode && !isHost()}
                             className={toolButtonClasses(tool)}
 
                         >
@@ -40,6 +43,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                         <button
                             key={label}
                             aria-label={label}
+                            disabled={viewMode && !isHost()}
                             onClick={tool ? () => setActiveTool(tool) : undefined}
                             className={toolButtonClasses(tool)}
                         >
@@ -51,6 +55,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                         <button
                             key={label}
                             aria-label={label}
+                            disabled={viewMode && !isHost()}
                             onClick={tool ? () => setActiveTool(tool) : undefined}
                             className={toolButtonClasses(tool)}
                         >
@@ -61,6 +66,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                     <div className="group relative">
                         <button
                             aria-label="Trash"
+                            disabled={viewMode && !isHost()}
                             className="art-button w-10 h-10 "
                             onClick={() => {
                                 clearDrawings();

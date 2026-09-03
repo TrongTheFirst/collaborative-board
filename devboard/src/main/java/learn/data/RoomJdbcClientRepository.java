@@ -16,7 +16,7 @@ public class RoomJdbcClientRepository implements RoomRepository {
     @Override
     public Room findByRoomCode(String roomCode) throws DataAccessException {
         final String sql = """
-                select room_code, board_id, host_client_id, created_at
+                select room_code, board_id, host_client_id, created_at, view_mode
                 from room
                 where room_code = ?;
                 """;
@@ -30,8 +30,8 @@ public class RoomJdbcClientRepository implements RoomRepository {
     @Override
     public Room create(Room room) throws DataAccessException {
         final String sql = """
-                insert into room (room_code, board_id, host_client_id, created_at) values
-                (:room_code, :board_id, :host_client_id, :created_at);
+                insert into room (room_code, board_id, host_client_id, created_at, view_mode) values
+                (:room_code, :board_id, :host_client_id, :created_at, :view_mode);
                 """;
 
         int rowsAffected = jdbcClient.sql(sql)
@@ -39,12 +39,30 @@ public class RoomJdbcClientRepository implements RoomRepository {
                 .param("board_id", room.getBoardId())
                 .param("host_client_id", room.getHostClientId())
                 .param("created_at", room.getCreatedAt())
+                .param("view_mode", room.isViewMode())
                 .update();
 
         if (rowsAffected == 0) {
             return null;
         }
         return room;
+    }
+
+    @Override
+    public boolean update(Room room) throws DataAccessException{
+        final String sql = """
+                update room
+                set view_mode = :view_mode
+                where room_code = :room_code;
+        """;
+
+        return jdbcClient.sql(sql)
+                .param("room_code", room.getRoomCode())
+                .param("board_id", room.getBoardId())
+                .param("host_client_id", room.getHostClientId())
+                .param("created_at", room.getCreatedAt())
+                .param("view_mode", room.isViewMode())
+                .update() > 0;
     }
 
     @Override

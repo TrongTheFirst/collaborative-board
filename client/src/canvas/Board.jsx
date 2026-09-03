@@ -24,7 +24,7 @@ function Board(){
     const [activeTool, setActiveTool] = useState("pencil");
     const [textInput, setTextInput] = useState(null);
 
-    const {sendDrawing, sendErase, inSession, connectToRoom} = useSession();
+    const {sendDrawing, sendErase, inSession, connectToRoom, isHost, viewMode} = useSession();
     const {drawings, addDrawing, clearDrawings,
         deleteAllBoardElements, deleteDrawingByClientId, removeDrawingByClientId,
         setBoardDrawings, drawingsLoaded, boardId} = useBoard();
@@ -126,7 +126,12 @@ function Board(){
         const line = createLineTool(previewRc, previewCanvas);
         const eraser = createEraserTool(previewRc, previewCanvas, drawings);
         const tools = { pencil, rectangle, ellipse, line, text, eraser};
-        const getActiveTool = () => tools[activeToolRef.current] ?? pencil;
+        let getActiveTool = () => tools[activeToolRef.current] ?? pencil;
+
+        if(viewMode && !isHost()){
+            getActiveTool = () => line;
+            setActiveTool("hand");
+        }
 
         const resize = () => {
             canvas.width = window.innerWidth;
@@ -196,7 +201,7 @@ function Board(){
             canvas.removeEventListener("pointermove", handlePointerMove);
             canvas.removeEventListener("pointerup", handlePointerUp);
         };
-    }, [boardId, drawings]);
+    }, [boardId, drawings, viewMode]);
 
     function commitText() {
         const value = textAreaRef.current?.value.trim();

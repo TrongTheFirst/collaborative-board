@@ -4,4 +4,4 @@ import learn.models.BoardElement;
 import lombok.*;
 
 
-public record BoardElementMessage (String clientId, BoardElement element) {}
+public record BoardElementMessage (String sender, BoardElement element) {}

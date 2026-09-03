@@ -15,4 +15,5 @@ public class Room {
     private long boardId;
     private String hostClientId;
     private LocalDateTime createdAt;
+    private boolean viewMode;
 }
