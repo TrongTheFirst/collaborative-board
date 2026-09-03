@@ -1,9 +1,6 @@
 package learn;
 
-import learn.models.Board;
-import learn.models.BoardElement;
-import learn.models.Room;
-import learn.models.User;
+import learn.models.*;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -59,11 +56,25 @@ public class TestDataHelper {
     }
 
     public static Room existingRoom() {
-        return new Room("ABC123", 1, testTime);
+        return new Room("ABC123", 1, "test-host-client-id", testTime);
     }
 
     public static Room roomToCreate() {
-        return new Room("XYZ789", 1, testTime);
+        return new Room("XYZ789", 1, "test-host-client-id", testTime);
+    }
+
+    public static BoardMember existingBoardMember() {
+        return new BoardMember(1, 1, "a", "ABC123", 1, testTime);
+    }
+
+    public static BoardMember boardMemberToCreate() {
+        return new BoardMember(0, 2, "b", "ABC123", 1, testTime);
+    }
+
+    public static BoardMember boardMemberAfterCreate() {
+        BoardMember member = boardMemberToCreate();
+        member.setId(2);
+        return member;
     }
     
 

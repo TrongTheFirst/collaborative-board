@@ -26,7 +26,6 @@ export function AuthProvider({ children }) {
         return token ? JSON.parse(atob(token.split(".")[1])) : null;
     }
 
-
     return (
         <AuthContext.Provider
             value={{

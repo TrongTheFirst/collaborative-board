@@ -1,18 +1,32 @@
 import { Users, Link2, X } from "lucide-react";
 import { useSession } from "../contexts/SessionContext.jsx";
 import {useBoard} from "../contexts/BoardContext.jsx"
+import { useAuth } from "../contexts/AuthContext.jsx"
 
-function CollabModal({ setOpenCollabModal }) {
-    const { connectToBoard, createRoom} = useSession();
-    const { boardId, setBoardDrawings } = useBoard();
+function CollabStartModal({ setOpenCollabStartModal, setOpenCollabEndModal }) {
+    const { connectToBoard, disconnectFromRoom, createRoom} = useSession();
+    const { boardId, setBoardDrawings, removeDrawingByClientId, clearBoard,
+            setBoardId, setBoardState} = useBoard();
+    const { userId, displayName } = useAuth();
 
     function handleCollabButton() {
-        createRoom(boardId, setBoardDrawings);
-        setOpenCollabModal(false);
+        const onReply = (boardId, fetchedDrawings) => {
+            setBoardId(boardId);
+            setBoardState(fetchedDrawings);
+        }
+        const onRoomEnd = (isHost) => {
+            disconnectFromRoom();
+            if(!isHost){
+                clearBoard();
+            }
+        }
+        createRoom(boardId, userId, displayName, {onReply, onNewDrawing:setBoardDrawings, onErase:removeDrawingByClientId, onRoomEnd});
+        setOpenCollabEndModal(true);
+        setOpenCollabStartModal(false);
     }
 
     return (
-        <div className="modal-base" onClick={() => setOpenCollabModal(false)}>
+        <div className="modal-base" onClick={() => setOpenCollabStartModal(false)}>
             <div
                 className="modal-container"
                 onClick={(e) => e.stopPropagation()}
@@ -36,7 +50,7 @@ function CollabModal({ setOpenCollabModal }) {
 
                     <button
                         type="button"
-                        onClick={() => setOpenCollabModal(false)}
+                        onClick={() => setOpenCollabStartModal(false)}
                         aria-label="Close"
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 cursor-pointer"
                     >
@@ -64,4 +78,4 @@ function CollabModal({ setOpenCollabModal }) {
     );
 }
 
-export default CollabModal;
+export default CollabStartModal;

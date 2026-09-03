@@ -2,16 +2,19 @@ package learn.controllers;
 
 import learn.data.DataAccessException;
 import learn.domain.BoardElementService;
+import learn.domain.BoardMemberService;
 import learn.domain.Result;
 import learn.domain.RoomService;
 import learn.dtos.*;
 import learn.models.BoardElement;
+import learn.models.BoardMember;
 import learn.models.Room;
 import lombok.AllArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
@@ -23,49 +26,140 @@ public class BoardWebSocketController {
     private final SimpMessagingTemplate messagingTemplate;
     private final BoardElementService elementService;
     private final RoomService roomService;
+    private final BoardMemberService memberService;
 
     //TODO make more secure
-    @MessageMapping("/create")
-    public void createRoom(@Payload CreateRoomRequest request) throws DataAccessException {
-        Result<Room> result = roomService.createForBoard(request.boardId());
+    @MessageMapping("/room/create")
+    public void createRoom(@Payload CreateRoomRequest request, StompHeaderAccessor headerAccessor) throws DataAccessException {
+        Long authenticatedUserId = (Long) headerAccessor.getSessionAttributes().get("userId");
+        Result<Room> result = roomService.createForBoard(request.boardId(),request.clientId(), authenticatedUserId);
         String replyTopic = "/topic/reply/" + request.clientId();
 
         if (!result.isSuccess()) {
-            String error = String.join("; ", result.getErrorMessages());
-            messagingTemplate.convertAndSend(replyTopic, new CreateRoomResponse(false, error, null));
+            messagingTemplate.convertAndSend(replyTopic, new CreateRoomResponse(false, result.getErrorMessages(), null));
+            return;
+        }
+        BoardMember member = new BoardMember(
+                0,
+                request.clientId(),
+                request.displayName(),
+                result.getPayload().getRoomCode(),
+                2,
+                request.joinedAt()
+        );
+        Result<BoardMember> memberResult = memberService.add(member);
+        if(!memberResult.isSuccess()){
+            messagingTemplate.convertAndSend(replyTopic, new CreateRoomResponse(false, memberResult.getErrorMessages(), null));
             return;
         }
 
         messagingTemplate.convertAndSend(replyTopic,
-                new CreateRoomResponse(true, null, result.getPayload().getRoomCode()));
+                new CreateRoomResponse(true, null, memberResult.getPayload()));
     }
 
-    @MessageMapping("/join")
+    @MessageMapping("/room/join")
     public void clientJoinsAndGetsBoardState(@Payload JoinRoomRequest request) throws DataAccessException {
-        Room room = roomService.findByRoomCode(request.roomCode());
+        BoardMember member = new  BoardMember(
+                0,
+                request.clientId(),
+                request.displayName(),
+                request.roomCode(),
+                request.roleId(),
+                request.joinedAt()
+        );
+
+        Result<BoardMember> result = memberService.add(member);
+
         String replyTopic = "/topic/reply/" + request.clientId();
 
+        if (!result.isSuccess()) {
+            messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(false, result.getErrorMessages(), null,false,null,null, null));
+            return;
+        }
+        BoardMember savedMember = result.getPayload();
+
+        Room room = roomService.findByRoomCode(request.roomCode());
+
+        List<BoardElement> boardElements = elementService.findAllFromBoardId(room.getBoardId());
+        List<BoardMember> members = memberService.findByRoomCode(request.roomCode());
+        messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(true, null, room.getBoardId(), room.isViewMode() , boardElements, savedMember, members));
+        messagingTemplate.convertAndSend("/topic/room/" + request.roomCode() + "/joined",
+                new MemberResponse("join",savedMember));
+    }
+
+    @MessageMapping("/room/leave")
+    public void clientLeaves(@Payload RoomRequest request) throws DataAccessException{
+        Result<BoardMember> result = memberService.delete(request.roomCode(), request.clientId());
+        String replyTopic = "/topic/room/" + request.roomCode() + "/joined";
+        messagingTemplate.convertAndSend(replyTopic, new MemberResponse("leave",result.getPayload()));
+    }
+
+    @MessageMapping("/room/end")
+    public void endRoom(@Payload RoomRequest request) throws DataAccessException {
+        Room room = roomService.findByRoomCode(request.roomCode());
+        String replyTopic = "/topic/room/" + request.roomCode() + "/ended";
+
         if (room == null) {
-            messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(false, "No room found", null,null ));
+            messagingTemplate.convertAndSend(replyTopic,
+                    new SuccessResponse(false, "No room found"));
+            return;
+        }
+        if(!room.getHostClientId().equals(request.clientId())){//not host
+            messagingTemplate.convertAndSend(replyTopic,
+                    new SuccessResponse(false, "Not host"));
             return;
         }
 
-        List<BoardElement> boardElements = elementService.findAllFromBoardId(room.getBoardId());
-        messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(true, null, room.getBoardId(), boardElements));
+        roomService.delete(request.roomCode());
+
+        messagingTemplate.convertAndSend("/topic/room/" + request.roomCode() + "/ended",
+                new SuccessResponse(true, null));
     }
 
+
     @MessageMapping("/room/{roomCode}")
-    public void addBoardElement(@Payload BoardElement element, @DestinationVariable String roomCode) throws DataAccessException {
-        Result<BoardElement> result = elementService.add(element);
+    public void addBoardElement(@Payload BoardElementMessage message, @DestinationVariable String roomCode) throws DataAccessException {
+        Room room = roomService.findByRoomCode(roomCode);
+        if(room.isViewMode() && !room.getHostClientId().equals(message.sender())){
+            return;
+        }
+        Result<BoardElement> result = elementService.add(message.element());
 
         if (!result.isSuccess()) {
             messagingTemplate.convertAndSend("/topic/room/" + roomCode,
-                    new BoardElementResponse(false, "Failed to save element",null));
+                    new BoardElementResponse(false, "add","Failed to save element",null));
             return;
         }
 
         messagingTemplate.convertAndSend("/topic/room/" + roomCode,
-                new BoardElementResponse(true, null, result.getPayload()));
+                new BoardElementResponse(true, "add",null, result.getPayload()));
     }
+
+    @MessageMapping("/room/{roomCode}/delete")
+    public void eraseBoardElement(@Payload RoomEraseRequest req, @DestinationVariable String roomCode) throws DataAccessException {
+        Result<BoardElement> result = elementService.deleteByClientId(req.boardId(),req.elementClientId());
+        if (!result.isSuccess()) {
+            messagingTemplate.convertAndSend("/topic/room/" + roomCode,
+                    new RoomEraseResponse(false, "erase","Failed to erase element",null));
+            return;
+        }
+        messagingTemplate.convertAndSend("/topic/room/" + roomCode,
+                new RoomEraseResponse(true, "erase",null, req.elementClientId()));
+    }
+
+    @MessageMapping("/room/{roomCode}/rules")
+    public void setViewMode(@Payload RoomRuleMessage message, @DestinationVariable String roomCode) throws DataAccessException {
+        BoardMember host = memberService.findByRoomCodeAndClientId(roomCode, message.clientId());
+        if(host == null || host.getRoleId() != 2){
+            return;
+        }
+        Room room = roomService.findByRoomCode(roomCode);
+
+        room.setViewMode(message.ruleToggle());
+        Result<Room> result = roomService.update(room);
+        messagingTemplate.convertAndSend("/topic/room/" + roomCode+"/rules", message);
+    }
+
+
 
 }

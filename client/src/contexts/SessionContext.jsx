@@ -7,25 +7,31 @@ const SessionContext = createContext(null);
 export function SessionProvider({children}) {
     const stompClient = useRef(null);
     const subscription = useRef(null);
+    const roomEndedSubscription = useRef(null);
+    const joinRoomSubscription = useRef(null);
+    const viewModeSubscription = useRef(null);
     const pendingOnConnectActions = useRef([]);
     const roomCode = useRef(null);
     const clientId = useRef(null);
+    const host = useRef(false);
+    const sessionDisplayName = useRef(null);
+    const [collaborators, setCollaborators] = useState([]);
+    const [viewMode, setViewMode] = useState(false);
 
     const navigate = useNavigate();
-    const [sessionConnected, setSessionConnected] = useState(false);
 
     if (!clientId.current) {
-        clientId.current = crypto.randomUUID();
+        clientId.current = localStorage.getItem("clientId") || crypto.randomUUID();
+        localStorage.setItem("clientId", clientId.current);
     }
 
     if(!stompClient.current) {
         stompClient.current = new Client({
             brokerURL: "ws://localhost:8080/ws",
-            reconnectDelay: 5000,
-
-            debug: (message) => {
-                console.log("STOMP:", message);
+            connectHeaders: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
+            reconnectDelay: 5000,
 
             onConnect: () => {
                 console.log("STOMP onConnect called");
@@ -38,7 +44,6 @@ export function SessionProvider({children}) {
 
             onDisconnect: () => {
                 console.log("Disconnected");
-                setSessionConnected(false);
             },
 
             onStompError: (frame) => {
@@ -48,30 +53,19 @@ export function SessionProvider({children}) {
 
             onWebSocketError: (error) => {
                 console.error("WebSocket error:", error);
-                setSessionConnected(false);
             }
         });
     }
 
-    // useEffect(() => {
-    //     return () => {
-    //         console.log("SessionProvider unmounting");
-    //
-    //         unsubscribe();
-    //
-    //         if (stompClient.current && stompClient.current.active) {
-    //             console.log("Deactivating STOMP client during cleanup");
-    //             stompClient.current.deactivate();
-    //         }
-    //
-    //     };
-    // }, []);
 
 
-    function connectToRoom(newRoomCode, onReply, onNewDrawing){
+    function connectToRoom(newRoomCode, displayName, onReply, onNewDrawing, onErase, onRoomEnd){
         console.log("Calling connectToRoom...")
         if (!stompClient.current) {
             console.log("Stomp client null. Leaving connectToRoom...")
+            return;
+        }
+        if(host.current){
             return;
         }
 
@@ -83,25 +77,36 @@ export function SessionProvider({children}) {
             const replyTopic = `/topic/reply/${clientId.current}`;
 
             const replySub = stompClient.current.subscribe(replyTopic, (message) => {
-                let { success, error, boardId, elements } = JSON.parse(message.body);
+                let { success, errors, boardId, viewMode, elements, member, members} = JSON.parse(message.body);
                 if (!success) {
-                    console.error(error);
+                    console.error(errors);
+                    onRoomEnd(isHost());
+                    navigate("/")
                 } else {
+                    sessionDisplayName.current = member.displayName;
+                    setViewMode(viewMode);
+                    host.current = member.roleId === 2;
+                    setCollaborators(members);
                     elements = elements.map(element => ({ type: element.type, ...element.elementData }));
                     onReply(boardId, elements);
-                    subscribeToRoom(newRoomCode, onNewDrawing);
-                    setSessionConnected(true);
+                    subscribeToRoom(newRoomCode, onNewDrawing, onErase, onRoomEnd);
                 }
                 replySub.unsubscribe();
             });
 
-            sendMessage("/app/join", { clientId: clientId.current, roomCode: newRoomCode });
+            sendMessage("/app/room/join", {
+                clientId: clientId.current,
+                roomCode: newRoomCode,
+                displayName,
+                roleId: 1,
+                joinedAt: Temporal.Now.plainDateTimeISO()
+            });
         }
 
         delayOnConnectDo(sendJoinRequest);
     }
 
-    function createRoom(boardId, onNewDrawing) {
+    function createRoom(boardId, userId, displayName, subReq) {
         if (!stompClient.current) return;
 
         activateClient();
@@ -113,43 +118,96 @@ export function SessionProvider({children}) {
             console.log(`Subscribed to: `,replyTopic);
 
             const replySub = stompClient.current.subscribe(replyTopic, (message) => {
-                const { success, roomCode: newRoomCode, error } = JSON.parse(message.body);
+                const { success, errors, member } = JSON.parse(message.body);
                 if (!success) {
-                    console.log(error);
+                    console.log(errors);
                 } else {
-                    subscribeToRoom(newRoomCode, onNewDrawing); // set roomCode.current NOW
-                    navigate(`/room/${newRoomCode}`);
+                    host.current = true;
+                    sessionDisplayName.current = member.displayName;
+                    setCollaborators((prev)=>[...prev, member]);
+                    subscribeToRoom(member.roomCode, subReq.onNewDrawing, subReq.onErase, subReq.onRoomEnd)
+                    navigate(`/room/${member.roomCode}`);
                 }
                 replySub.unsubscribe();
             });
 
-            sendMessage("/app/create", { clientId: clientId.current, boardId });
+            sendMessage("/app/room/create", {
+                clientId: clientId.current,
+                boardId,
+                displayName,
+                joinedAt: Temporal.Now.plainDateTimeISO(),
+            });
         }
 
         delayOnConnectDo(sendCreateRequest);
     }
 
-    function subscribeToRoom(newRoomCode, onNewDrawing){
+    function subscribeToRoom(newRoomCode, onNewDrawing, onErase, onRoomEnd){
         unsubscribe();
         roomCode.current = newRoomCode;
         const replyTopic = `/topic/room/${newRoomCode}`;
 
         subscription.current = stompClient.current.subscribe(replyTopic, (message) => {
-            const { success, error, element } = JSON.parse(message.body);
+            const { success, type, error, payload } = JSON.parse(message.body);
             if (!success) {
                 console.error(error);
-            } else {
-                const drawing = { type: element.type, ...element.elementData };
+            } else if(type === "add"){
+                const drawing = { type: payload.type, ...payload.elementData };
                 onNewDrawing(drawing);
+            }else if(type === "erase"){
+                onErase(payload);
             }
         });
+
+        joinRoomSubscription.current = stompClient.current.subscribe(replyTopic+"/joined", (message) => {
+            const {type, member} = JSON.parse(message.body);
+            if(type === "join"){
+                setCollaborators((prev) => {
+                    const exists = prev.some((m) => m.id === member.id);
+                    return exists ? prev : [...prev, member];
+                });
+            }else if(type === "leave"){
+                setCollaborators((prev) => {
+                    return prev.filter((m) => m.id !== member.id);
+                });
+            }
+
+        })
+
+        viewModeSubscription.current = stompClient.current.subscribe(replyTopic+"/rules", (message) => {
+            const {rule, ruleToggle} = JSON.parse(message.body);
+            if(!host.current){
+                console.log(`${rule} : ${ruleToggle}`)
+                switch(rule){
+                    case "view":
+                        setViewMode(ruleToggle);
+                        break;
+                }
+            }
+        })
+
+        roomEndedSubscription.current = stompClient.current.subscribe(replyTopic+"/ended", (message) => {
+            const { success, error } = JSON.parse(message.body);
+            if(success && !host.current){
+                navigate("/");
+                window.alert("Host ended room");
+                onRoomEnd(host.current);
+            }
+        })
     }
 
     const disconnectFromRoom = () => {
+        if(host.current){
+            endRoom();
+            host.current = false;
+        }
+        setViewMode(false);
+        leaveRoom();
         unsubscribe();
         deactivateClient();
         roomCode.current = null;
-        setSessionConnected(false);
+        setCollaborators([]);
+        pendingOnConnectActions.current = []
         navigate("/");
     };
 
@@ -176,13 +234,50 @@ export function SessionProvider({children}) {
     }
 
     function sendDrawing(boardElement){
-        sendMessage(`/app/room/${roomCode.current}`, boardElement);
+        if(viewMode && !host.current){
+            return;
+        }
+        sendMessage(`/app/room/${roomCode.current}`, {sender:clientId.current, element:boardElement});
+    }
+    function sendErase(boardId, elementClientId){
+        if(viewMode && !host.current){
+            return;
+        }
+        sendMessage(`/app/room/${roomCode.current}/delete`, {boardId, elementClientId});
+    }
+    function endRoom(){
+        if(!host.current){
+            return;
+        }
+        sendMessage(`/app/room/end`,{clientId:clientId.current, roomCode:roomCode.current});
+    }
+    function leaveRoom(){
+        sendMessage("/app/room/leave", {clientId:clientId.current, roomCode:roomCode.current});
+    }
+    function sendRuleToggle(rule, ruleToggle){
+        if (!host.current) return;
+        if(rule === "view"){
+            setViewMode(ruleToggle);
+        }
+        sendMessage(`/app/room/${roomCode.current}/rules`, { clientId: clientId.current, rule, ruleToggle });
     }
 
     function unsubscribe(){
         if (subscription.current) {
             subscription.current.unsubscribe();
             subscription.current = null;
+        }
+        if(joinRoomSubscription.current){
+            joinRoomSubscription.current.unsubscribe();
+            joinRoomSubscription.current = null;
+        }
+        if (roomEndedSubscription.current) {
+            roomEndedSubscription.current.unsubscribe();
+            roomEndedSubscription.current = null;
+        }
+        if(viewModeSubscription.current){
+            viewModeSubscription.current.unsubscribe();
+            viewModeSubscription.current = null;
         }
     }
 
@@ -195,6 +290,9 @@ export function SessionProvider({children}) {
 
         if (stompClient.current && !stompClient.current.active) {
             console.log("Calling activate()");
+            stompClient.current.connectHeaders = {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            };
             stompClient.current.activate();
         }
     }
@@ -208,19 +306,33 @@ export function SessionProvider({children}) {
     function inSession(){
         return stompClient.current?.connected && roomCode.current !== null;
     }
+    function isHost(){
+        return host.current;
+    }
     function isInRoom(code){
         return stompClient.current?.connected && roomCode.current === code;
+    }
+    function getClientId(){
+        if(clientId.current){
+            return clientId.current;
+        }
+        return null;
     }
 
     return (
         <SessionContext.Provider value={{
             inSession,
+            isHost,
             isInRoom,
-            sessionConnected,
+            collaborators,
+            getClientId,
             connectToRoom,
             disconnectFromRoom,
             sendDrawing,
-            createRoom
+            sendErase,
+            createRoom,
+            viewMode,
+            sendRuleToggle,
         }}>
             {children}
         </SessionContext.Provider>

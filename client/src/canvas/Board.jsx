@@ -5,7 +5,8 @@ import Toolbar from "./Toolbar.jsx";
 import OptionsBar from "./OptionsBar.jsx";
 import { useSession} from "../contexts/SessionContext.jsx";
 import {useBoard}  from "../contexts/BoardContext.jsx";
-import CollabModal from "../components/CollabModal.jsx";
+import CollabStartModal from "../components/CollabStartModal.jsx";
+import  CollabEndModal from "../components/CollabEndModal.jsx";
 import LoginModal from "../users/LoginModal.jsx"
 import CreateModal from "../users/CreateModal.jsx"
 import { createPencilTool, drawPencilElement } from "./tools/Pencil.js";
@@ -16,13 +17,14 @@ import { createLineTool, drawLineElement } from "./tools/Line.js"
 import { createEraserTool } from "./tools/Eraser.js";
 
 function Board(){
-    const [openCollabModal, setOpenCollabModal] = useState(false);
+    const [openCollabStartModal, setOpenCollabStartModal] = useState(false);
+    const [openCollabEndModal, setOpenCollabEndModal] = useState(false);
     const [openLoginModal, setOpenLoginModal] = useState(false);
     const [openCreateModal, setOpenCreateModal] = useState(false);
     const [activeTool, setActiveTool] = useState("pencil");
     const [textInput, setTextInput] = useState(null);
 
-    const {sendDrawing, inSession, connectToRoom} = useSession();
+    const {sendDrawing, sendErase, inSession, connectToRoom, isHost, viewMode} = useSession();
     const {drawings, addDrawing, clearDrawings,
         deleteAllBoardElements, deleteDrawingByClientId, removeDrawingByClientId,
         setBoardDrawings, drawingsLoaded, boardId} = useBoard();
@@ -124,7 +126,12 @@ function Board(){
         const line = createLineTool(previewRc, previewCanvas);
         const eraser = createEraserTool(previewRc, previewCanvas, drawings);
         const tools = { pencil, rectangle, ellipse, line, text, eraser};
-        const getActiveTool = () => tools[activeToolRef.current] ?? pencil;
+        let getActiveTool = () => tools[activeToolRef.current] ?? pencil;
+
+        if(viewMode && !isHost()){
+            getActiveTool = () => line;
+            setActiveTool("hand");
+        }
 
         const resize = () => {
             canvas.width = window.innerWidth;
@@ -156,9 +163,13 @@ function Board(){
 
             if(activeToolRef.current === "eraser") {
                 drawing.forEach(d => {
-                    deleteDrawingByClientId(d.clientId)
-                    removeDrawingByClientId(d.clientId);
-                    drawingsCountRef.current -= 1;
+                    if(inSession()){
+                        sendErase(boardId, d.clientId);
+                    }else{
+                        deleteDrawingByClientId(d.clientId);
+                        removeDrawingByClientId(d.clientId);
+                        drawingsCountRef.current -= 1;
+                    }
                 })
                 return;
             }
@@ -190,7 +201,7 @@ function Board(){
             canvas.removeEventListener("pointermove", handlePointerMove);
             canvas.removeEventListener("pointerup", handlePointerUp);
         };
-    }, [boardId, drawings]);
+    }, [boardId, drawings, viewMode]);
 
     function commitText() {
         const value = textAreaRef.current?.value.trim();
@@ -243,7 +254,8 @@ function Board(){
                          activeTool={activeTool}
                          setActiveTool={setActiveTool}
                 />
-                <OptionsBar setOpenCollabModal={setOpenCollabModal}
+                <OptionsBar setOpenCollabStartModal={setOpenCollabStartModal}
+                            setOpenCollabEndModal={setOpenCollabEndModal}
                             setOpenLoginModal={setOpenLoginModal}
                             setOpenCreateModal={setOpenCreateModal}
                 />
@@ -268,7 +280,8 @@ function Board(){
                     }}
                 />
             )}
-            {openCollabModal && <CollabModal setOpenCollabModal={setOpenCollabModal}/>}
+            {openCollabStartModal && <CollabStartModal setOpenCollabStartModal={setOpenCollabStartModal} setOpenCollabEndModal={setOpenCollabEndModal}/>}
+            {openCollabEndModal && <CollabEndModal setOpenCollabEndModal={setOpenCollabEndModal}/>}
             {openLoginModal && <LoginModal setOpenLoginModal={setOpenLoginModal} setOpenCreateModal={setOpenCreateModal}/>}
             {openCreateModal && <CreateModal setOpenLoginModal={setOpenLoginModal} setOpenCreateModal={setOpenCreateModal}/>}
         </>

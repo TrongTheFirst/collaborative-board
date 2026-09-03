@@ -13,8 +13,8 @@ when boardId changes, fetch drawings or add board
 const BoardContext = createContext(null);
 export function BoardProvider({ children }) {
 
-    const { userId, BASE_URL } = useAuth();
-    const { connectToRoom, isInRoom } = useSession();
+    const { userId, displayName, BASE_URL} = useAuth();
+    const { connectToRoom, disconnectFromRoom, isInRoom } = useSession();
     const [drawings,setDrawings] = useState([]);
     const [drawingsLoaded, setDrawingsLoaded] = useState(false);
     const currentBoard = useRef(null);
@@ -24,11 +24,18 @@ export function BoardProvider({ children }) {
 
     useEffect(()=>{
         if(roomCode && !isInRoom(roomCode)){//run once
-            const onReply = (boardId, fetchedDrawings) =>{
-                setBoardId(boardId);
+            const onReply = (board_id, fetchedDrawings) =>{
+                localStorage.setItem("boardId",board_id);
+                setBoardId(board_id);
                 setBoardState(fetchedDrawings);
             }
-            connectToRoom(roomCode, onReply, setBoardDrawings);
+            const onRoomEnd = (isHost) => {
+                disconnectFromRoom();
+                if(!isHost){
+                    clearBoard();
+                }
+            };
+            connectToRoom(roomCode, displayName, onReply, setBoardDrawings, removeDrawingByClientId, onRoomEnd);
         }
     },[roomCode])
 
