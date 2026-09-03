@@ -12,7 +12,7 @@ export function SessionProvider({children}) {
     const pendingOnConnectActions = useRef([]);
     const roomCode = useRef(null);
     const clientId = useRef(null);
-    const host = useRef(null);
+    const host = useRef(false);
     const sessionDisplayName = useRef(null);
     const [collaborators, setCollaborators] = useState([]);
 
@@ -27,6 +27,9 @@ export function SessionProvider({children}) {
     if(!stompClient.current) {
         stompClient.current = new Client({
             brokerURL: "ws://localhost:8080/ws",
+            connectHeaders: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
             reconnectDelay: 5000,
 
             onConnect: () => {
@@ -57,7 +60,7 @@ export function SessionProvider({children}) {
 
 
 
-    function connectToRoom(newRoomCode, onReply, onNewDrawing, onErase, onRoomEnd){
+    function connectToRoom(newRoomCode, displayName, onReply, onNewDrawing, onErase, onRoomEnd){
         console.log("Calling connectToRoom...")
         if (!stompClient.current) {
             console.log("Stomp client null. Leaving connectToRoom...")
@@ -78,9 +81,11 @@ export function SessionProvider({children}) {
                 let { success, errors, boardId, elements, member, members} = JSON.parse(message.body);
                 if (!success) {
                     console.error(errors);
+                    onRoomEnd(isHost());
                     navigate("/")
                 } else {
                     sessionDisplayName.current = member.displayName;
+                    host.current = member.roleId === 2;
                     setCollaborators(members);
                     elements = elements.map(element => ({ type: element.type, ...element.elementData }));
                     onReply(boardId, elements);
@@ -93,6 +98,7 @@ export function SessionProvider({children}) {
             sendMessage("/app/room/join", {
                 clientId: clientId.current,
                 roomCode: newRoomCode,
+                displayName,
                 roleId: 1,
                 joinedAt: Temporal.Now.plainDateTimeISO()
             });
@@ -101,7 +107,7 @@ export function SessionProvider({children}) {
         delayOnConnectDo(sendJoinRequest);
     }
 
-    function createRoom(boardId, displayName, subReq) {
+    function createRoom(boardId, userId, displayName, subReq) {
         if (!stompClient.current) return;
 
         activateClient();
@@ -115,7 +121,7 @@ export function SessionProvider({children}) {
             const replySub = stompClient.current.subscribe(replyTopic, (message) => {
                 const { success, errors, member } = JSON.parse(message.body);
                 if (!success) {
-                    console.log(error);
+                    console.log(errors);
                 } else {
                     host.current = true;
                     sessionDisplayName.current = member.displayName;
@@ -130,7 +136,7 @@ export function SessionProvider({children}) {
                 clientId: clientId.current,
                 boardId,
                 displayName,
-                joinedAt: Temporal.Now.plainDateTimeISO()
+                joinedAt: Temporal.Now.plainDateTimeISO(),
             });
         }
 
@@ -252,6 +258,9 @@ export function SessionProvider({children}) {
 
         if (stompClient.current && !stompClient.current.active) {
             console.log("Calling activate()");
+            stompClient.current.connectHeaders = {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            };
             stompClient.current.activate();
         }
     }

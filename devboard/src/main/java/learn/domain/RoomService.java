@@ -3,7 +3,9 @@ package learn.domain;
 import learn.data.DataAccessException;
 import learn.data.repository_interface.BoardRepository;
 import learn.data.repository_interface.RoomRepository;
+import learn.models.Board;
 import learn.models.Room;
+import learn.models.User;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,11 +25,17 @@ public class RoomService {
         return repository.findByRoomCode(roomCode);
     }
 
-    public Result<Room> createForBoard(long boardId, String hostClientId) throws DataAccessException {
+    public Result<Room> createForBoard(long boardId, String hostClientId, Long userId) throws DataAccessException {
         Result<Room> result = new Result<>();
 
-        if (boardRepository.findById(boardId) == null) {
+        Board board = boardRepository.findById(boardId);
+        if (board == null) {
             result.addErrorMessage("Board %s was not found", ResultType.NOT_FOUND, boardId);
+            return result;
+        }
+
+        if (board.getOwnerId() != 0 && (userId == null || board.getOwnerId() != userId)) {
+            result.addErrorMessage("Cannot start a room for another user's board", ResultType.INVALID);
             return result;
         }
 

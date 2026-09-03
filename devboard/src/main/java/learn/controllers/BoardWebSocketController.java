@@ -15,6 +15,7 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
@@ -30,8 +31,9 @@ public class BoardWebSocketController {
 
     //TODO make more secure
     @MessageMapping("/room/create")
-    public void createRoom(@Payload CreateRoomRequest request) throws DataAccessException {
-        Result<Room> result = roomService.createForBoard(request.boardId(),request.clientId());
+    public void createRoom(@Payload CreateRoomRequest request, StompHeaderAccessor headerAccessor) throws DataAccessException {
+        Long authenticatedUserId = (Long) headerAccessor.getSessionAttributes().get("userId");
+        Result<Room> result = roomService.createForBoard(request.boardId(),request.clientId(), authenticatedUserId);
         String replyTopic = "/topic/reply/" + request.clientId();
 
         if (!result.isSuccess()) {

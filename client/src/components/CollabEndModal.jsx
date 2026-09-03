@@ -7,10 +7,10 @@ function CollabEndModal({setOpenCollabEndModal}) {
     const { clearBoard } = useBoard();
 
     function handleCloseButton() {
-        disconnectFromRoom();
         if(!isHost()){
             clearBoard();
         }
+        disconnectFromRoom();
         setOpenCollabEndModal(false);
     }
 
@@ -59,7 +59,7 @@ function CollabEndModal({setOpenCollabEndModal}) {
                         className="mt-6 w-full primary-button"
                     >
                         <Link2 size={17} strokeWidth={1.75} />
-                        <span>Stop Session</span>
+                        <span>{isHost() ? "Stop Session" : "Leave Session"}</span>
                     </button>
                 </div>
             </div>
