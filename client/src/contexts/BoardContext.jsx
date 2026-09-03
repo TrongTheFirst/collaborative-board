@@ -1,7 +1,8 @@
-import {createContext, useCallback, useContext, useState, useRef, useEffect} from "react";
+import {createContext, useCallback, useContext, useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom"
 import {useAuth} from "./AuthContext.jsx";
 import {useSession} from "./SessionContext.jsx";
+import {useNotif} from "./NotificationContext.jsx";
 
 /*
 on load, determine if board is in DB (has boardId).
@@ -15,11 +16,17 @@ export function BoardProvider({ children }) {
 
     const { userId, displayName, BASE_URL} = useAuth();
     const { connectToRoom, disconnectFromRoom, isInRoom } = useSession();
+    const { showNotif } = useNotif();
     const [drawings,setDrawings] = useState([]);
     const [drawingsLoaded, setDrawingsLoaded] = useState(false);
     const currentBoard = useRef(null);
     const createBoard = useRef(false)
     const [boardId, setBoardId] = useState(() => localStorage.getItem("boardId"));
+
+    const [notifications, setNotifications] = useState([]);
+    const notifQueue = useRef([]);
+    const MAX_VISIBLE_NOTIFS = 5;
+
     const { roomCode } = useParams();
 
     useEffect(()=>{
@@ -82,6 +89,7 @@ export function BoardProvider({ children }) {
             body: JSON.stringify(board)
         });
         if (!response.ok) {
+            showNotif("Failed to add board");
             throw new Error(`Request failed: ${response.status}`);
         }
         const payload = await response.json();
@@ -110,6 +118,8 @@ export function BoardProvider({ children }) {
         if(response.ok){
             const payload = await response.json();
             currentBoard.current = payload;
+        }else{
+            showNotif("Failed to fetch board");
         }
     }
     async function editBoard(board, token, userId){
@@ -130,6 +140,7 @@ export function BoardProvider({ children }) {
             body: JSON.stringify(toUpdate)
         });
         if (!response.ok) {
+            showNotif("Failed to update board");
             throw new Error(`Request failed: ${response.status}`);
         }
         setBoard(toUpdate)
@@ -145,6 +156,7 @@ export function BoardProvider({ children }) {
                 throw new Error(`Failed to save drawing: ${response.status}`);
             }
         }catch(error){
+            showNotif("Failed to save drawing");
             console.error("Failed to add drawing", error);
         }
     }
@@ -159,6 +171,7 @@ export function BoardProvider({ children }) {
                 throw new Error(`Failed to delete element: ${response.status}`);
             }
         }catch(error){
+            showNotif("Failed to delete drawing");
             console.error("Failed to delete element", error);
         }
     }
@@ -175,6 +188,7 @@ export function BoardProvider({ children }) {
                 throw new Error(`Failed to delete board elements: ${response.status}`);
             }
         }catch(error){
+            showNotif("Failed to clear drawings");
             console.error("Failed to delete board elements", error);
         }
     }
@@ -198,7 +212,6 @@ export function BoardProvider({ children }) {
         setDrawings(drawings);
         localStorage.setItem("drawings",JSON.stringify(drawings));
     }
-
 
     function clearDrawings(){
         setDrawings([]);
@@ -227,6 +240,8 @@ export function BoardProvider({ children }) {
         fetchBoardElements(boardId);
         fetchBoard(boardId);
     }
+
+
 
     return (
         <BoardContext.Provider

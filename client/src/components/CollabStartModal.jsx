@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext.jsx"
 function CollabStartModal({ setOpenCollabStartModal, setOpenCollabEndModal }) {
     const { connectToBoard, disconnectFromRoom, createRoom} = useSession();
     const { boardId, setBoardDrawings, removeDrawingByClientId, clearBoard,
-            setBoardId, setBoardState} = useBoard();
+            setBoardId, setBoardState, showErr} = useBoard();
     const { userId, displayName } = useAuth();
 
     function handleCollabButton() {

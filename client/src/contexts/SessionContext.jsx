@@ -1,10 +1,13 @@
 import {createContext, useContext, useEffect, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {Client} from "@stomp/stompjs";
+import {useNotif} from "./NotificationContext.jsx";
 
 const SessionContext = createContext(null);
 
 export function SessionProvider({children}) {
+    const { showNotif } = useNotif();
+
     const stompClient = useRef(null);
     const subscription = useRef(null);
     const roomEndedSubscription = useRef(null);
@@ -79,6 +82,7 @@ export function SessionProvider({children}) {
             const replySub = stompClient.current.subscribe(replyTopic, (message) => {
                 let { success, errors, boardId, viewMode, elements, member, members} = JSON.parse(message.body);
                 if (!success) {
+                    showNotif("Failed to connect to room...");
                     console.error(errors);
                     onRoomEnd(isHost());
                     navigate("/")
@@ -120,6 +124,7 @@ export function SessionProvider({children}) {
             const replySub = stompClient.current.subscribe(replyTopic, (message) => {
                 const { success, errors, member } = JSON.parse(message.body);
                 if (!success) {
+                    showNotif("Failed to create room...");
                     console.log(errors);
                 } else {
                     host.current = true;
@@ -150,6 +155,7 @@ export function SessionProvider({children}) {
         subscription.current = stompClient.current.subscribe(replyTopic, (message) => {
             const { success, type, error, payload } = JSON.parse(message.body);
             if (!success) {
+                showNotif("Failed to subscribe to room...");
                 console.error(error);
             } else if(type === "add"){
                 const drawing = { type: payload.type, ...payload.elementData };
@@ -162,11 +168,13 @@ export function SessionProvider({children}) {
         joinRoomSubscription.current = stompClient.current.subscribe(replyTopic+"/joined", (message) => {
             const {type, member} = JSON.parse(message.body);
             if(type === "join"){
+                showNotif(`${member.displayName} joined the room!`, false);
                 setCollaborators((prev) => {
                     const exists = prev.some((m) => m.id === member.id);
                     return exists ? prev : [...prev, member];
                 });
             }else if(type === "leave"){
+                showNotif(`${member.displayName} left the room!`, false);
                 setCollaborators((prev) => {
                     return prev.filter((m) => m.id !== member.id);
                 });
@@ -180,6 +188,7 @@ export function SessionProvider({children}) {
                 console.log(`${rule} : ${ruleToggle}`)
                 switch(rule){
                     case "view":
+                        showNotif(`Host turned ${ruleToggle ? "on":"off"} view only`, false);
                         setViewMode(ruleToggle);
                         break;
                 }
@@ -190,7 +199,7 @@ export function SessionProvider({children}) {
             const { success, error } = JSON.parse(message.body);
             if(success && !host.current){
                 navigate("/");
-                window.alert("Host ended room");
+                showNotif("Host ended room", false);
                 onRoomEnd(host.current);
             }
         })

@@ -5,10 +5,12 @@ import Toolbar from "./Toolbar.jsx";
 import OptionsBar from "./OptionsBar.jsx";
 import { useSession} from "../contexts/SessionContext.jsx";
 import {useBoard}  from "../contexts/BoardContext.jsx";
+import { useNotif } from "../contexts/NotificationContext.jsx";
 import CollabStartModal from "../components/CollabStartModal.jsx";
 import  CollabEndModal from "../components/CollabEndModal.jsx";
 import LoginModal from "../users/LoginModal.jsx"
 import CreateModal from "../users/CreateModal.jsx"
+import NotificationBanner from "../components/NotificationBanner.jsx"
 import { createPencilTool, drawPencilElement } from "./tools/Pencil.js";
 import { createTextTool, drawTextElement, TEXT_STYLE} from "./tools/Text.js";
 import { createRectangleTool, drawRectangleElement } from "./tools/Rectangle.js";
@@ -23,7 +25,9 @@ function Board(){
     const [openCreateModal, setOpenCreateModal] = useState(false);
     const [activeTool, setActiveTool] = useState("pencil");
     const [textInput, setTextInput] = useState(null);
+    const [errors, setErrors] = useState(null);
 
+    const { showNotif } = useNotif();
     const {sendDrawing, sendErase, inSession, connectToRoom, isHost, viewMode} = useSession();
     const {drawings, addDrawing, clearDrawings,
         deleteAllBoardElements, deleteDrawingByClientId, removeDrawingByClientId,
@@ -260,7 +264,7 @@ function Board(){
                             setOpenCreateModal={setOpenCreateModal}
                 />
             </div>
-
+            <NotificationBanner />
             <canvas ref={canvasRef} className="fixed z-0 inset-0 w-screen h-screen"  />
             <canvas ref={previewCanvasRef} className="fixed z-0 inset-0 w-screen h-screen pointer-events-none" />
             {textInput && (
