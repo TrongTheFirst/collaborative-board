@@ -37,6 +37,10 @@ public class JwtUtil {
                 && extractExpiration(token).after(new Date());
     }
 
+    public long extractUserId(String token) {
+        return Long.parseLong(parseClaims(token).getSubject());
+    }
+
     public String extractEmail(String token) {
         return parseClaims(token).get("email",String.class);
     }

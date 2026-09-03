@@ -20,7 +20,7 @@ function CollabStartModal({ setOpenCollabStartModal, setOpenCollabEndModal }) {
                 clearBoard();
             }
         }
-        createRoom(boardId, displayName, {onReply, onNewDrawing:setBoardDrawings, onErase:removeDrawingByClientId, onRoomEnd});
+        createRoom(boardId, userId, displayName, {onReply, onNewDrawing:setBoardDrawings, onErase:removeDrawingByClientId, onRoomEnd});
         setOpenCollabEndModal(true);
         setOpenCollabStartModal(false);
     }
