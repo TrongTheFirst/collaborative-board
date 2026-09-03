@@ -201,6 +201,7 @@ export function SessionProvider({children}) {
             endRoom();
             host.current = false;
         }
+        setViewMode(false);
         leaveRoom();
         unsubscribe();
         deactivateClient();
