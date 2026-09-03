@@ -81,11 +81,14 @@ public class BoardMemberService {
         return result;
     }
 
-    public Result<BoardMember> delete(long id) throws DataAccessException {
+    public Result<BoardMember> delete(String roomCode, String clientId) throws DataAccessException {
         Result<BoardMember> result = new Result<>();
-        if (!repository.delete(id)) {
-            result.addErrorMessage("Board member %s was not found", ResultType.NOT_FOUND, id);
+        BoardMember member = repository.findByRoomCodeAndClientId(roomCode, clientId);
+        if (!repository.delete(roomCode, clientId)) {
+            result.addErrorMessage("Board member was not found", ResultType.NOT_FOUND);
+            return result;
         }
+        result.setPayload(member);
         return result;
     }
 }

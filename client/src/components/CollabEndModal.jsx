@@ -3,11 +3,14 @@ import { useSession } from "../contexts/SessionContext.jsx";
 import { useBoard } from "../contexts/BoardContext.jsx"
 
 function CollabEndModal({setOpenCollabEndModal}) {
-    const { disconnectFromRoom } = useSession();
+    const { disconnectFromRoom, isHost} = useSession();
     const { clearBoard } = useBoard();
 
     function handleCloseButton() {
         disconnectFromRoom();
+        if(!isHost()){
+            clearBoard();
+        }
         setOpenCollabEndModal(false);
     }
 

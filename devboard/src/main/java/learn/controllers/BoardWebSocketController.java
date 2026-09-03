@@ -82,7 +82,15 @@ public class BoardWebSocketController {
         List<BoardElement> boardElements = elementService.findAllFromBoardId(room.getBoardId());
         List<BoardMember> members = memberService.findByRoomCode(request.roomCode());
         messagingTemplate.convertAndSend(replyTopic, new JoinRoomResponse(true, null, room.getBoardId(), boardElements, savedMember, members));
-        messagingTemplate.convertAndSend("/topic/room/" + request.roomCode() + "/joined",savedMember);
+        messagingTemplate.convertAndSend("/topic/room/" + request.roomCode() + "/joined",
+                new MemberResponse("join",savedMember));
+    }
+
+    @MessageMapping("/room/leave")
+    public void clientLeaves(@Payload RoomRequest request) throws DataAccessException{
+        Result<BoardMember> result = memberService.delete(request.roomCode(), request.clientId());
+        String replyTopic = "/topic/room/" + request.roomCode() + "/joined";
+        messagingTemplate.convertAndSend(replyTopic, new MemberResponse("leave",result.getPayload()));
     }
 
     @MessageMapping("/room/end")
@@ -107,10 +115,6 @@ public class BoardWebSocketController {
                 new SuccessResponse(true, null));
     }
 
-    @MessageMapping("/room/leave")
-    public void leaveRoom(@Payload JoinRoomRequest request) throws DataAccessException {
-
-    }
 
     @MessageMapping("/room/{roomCode}")
     public void addBoardElement(@Payload BoardElement element, @DestinationVariable String roomCode) throws DataAccessException {

@@ -84,12 +84,13 @@ public class BoardMemberJdbcClientRepository implements BoardMemberRepository {
     }
 
     @Override
-    public boolean delete(long id) throws DataAccessException {
+    public boolean delete(String roomCode, String clientId) throws DataAccessException {
         final String sql = """
-                delete from board_member where id = ?;
+                delete from board_member where room_code = ? and client_id = ?;
                 """;
         return jdbcClient.sql(sql)
-                .param(id)
+                .param(roomCode)
+                .param(clientId)
                 .update() == 1;
     }
 }

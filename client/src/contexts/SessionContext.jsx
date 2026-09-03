@@ -155,19 +155,26 @@ export function SessionProvider({children}) {
         });
 
         joinRoomSubscription.current = stompClient.current.subscribe(replyTopic+"/joined", (message) => {
-            const person = JSON.parse(message.body);
-            setCollaborators((prev) => {
-                const exists = prev.some((p) => p.id === person.id);
-                return exists ? prev : [...prev, person];
-            });
+            const {type, member} = JSON.parse(message.body);
+            if(type === "join"){
+                setCollaborators((prev) => {
+                    const exists = prev.some((m) => m.id === member.id);
+                    return exists ? prev : [...prev, member];
+                });
+            }else if(type === "leave"){
+                setCollaborators((prev) => {
+                    return prev.filter((m) => m.id !== member.id);
+                });
+            }
+
         })
 
         roomEndedSubscription.current = stompClient.current.subscribe(replyTopic+"/ended", (message) => {
             const { success, error } = JSON.parse(message.body);
             if(success && !host.current){
+                navigate("/");
                 window.alert("Host ended room");
                 onRoomEnd(host.current);
-                navigate("/");
             }
         })
     }
@@ -177,6 +184,7 @@ export function SessionProvider({children}) {
             endRoom();
             host.current = false;
         }
+        leaveRoom();
         unsubscribe();
         deactivateClient();
         roomCode.current = null;
@@ -216,6 +224,9 @@ export function SessionProvider({children}) {
     function endRoom(){
         sendMessage(`/app/room/end`,{clientId:clientId.current, roomCode:roomCode.current});
     }
+    function leaveRoom(){
+        sendMessage("/app/room/leave", {clientId:clientId.current, roomCode:roomCode.current});
+    }
 
     function unsubscribe(){
         if (subscription.current) {
@@ -254,6 +265,9 @@ export function SessionProvider({children}) {
     function inSession(){
         return stompClient.current?.connected && roomCode.current !== null;
     }
+    function isHost(){
+        return host.current;
+    }
     function isInRoom(code){
         return stompClient.current?.connected && roomCode.current === code;
     }
@@ -267,6 +281,7 @@ export function SessionProvider({children}) {
     return (
         <SessionContext.Provider value={{
             inSession,
+            isHost,
             isInRoom,
             sessionConnected,
             collaborators,

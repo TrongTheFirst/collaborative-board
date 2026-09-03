@@ -14,5 +14,5 @@ public interface BoardMemberRepository {
 
     BoardMember create(BoardMember boardMember) throws DataAccessException;
 
-    boolean delete(long id) throws DataAccessException;
+    boolean delete(String roomCode, String clientId) throws DataAccessException;
 }
