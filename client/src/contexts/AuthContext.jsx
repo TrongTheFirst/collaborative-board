@@ -1,9 +1,11 @@
 import {createContext, useCallback, useContext, useState, useEffect} from "react";
+import { useNotif } from "./NotificationContext.jsx";
 
 const AuthContext = createContext(null);
 
 const BASE_URL = "http://localhost:8080/api"
 export function AuthProvider({ children }) {
+    const { showNotif } = useNotif();
     const [token, setToken] = useState(() => localStorage.getItem("token"));
 
     const parsedToken = parseToken(token);
@@ -11,6 +13,7 @@ export function AuthProvider({ children }) {
     const email = parsedToken ? parsedToken.email : "";
     const userId = parsedToken ? parsedToken.sub : null;
     const displayName = parsedToken ? parsedToken.displayName : null;
+    const expiration = parsedToken ? parsedToken.exp : null;
 
     function login(newToken) {
         localStorage.setItem("token", newToken);
@@ -36,7 +39,8 @@ export function AuthProvider({ children }) {
                 BASE_URL,
                 isLoggedIn: !!token,
                 login,
-                logout
+                logout,
+                expiration
             }}
         >
             {children}

@@ -60,6 +60,21 @@ export function SessionProvider({children}) {
         });
     }
 
+    useEffect(() => {
+        const onUnload = () => {
+            if(roomCode.current) {
+                cleanupRoomConnection();
+            }
+        }
+        window.addEventListener("pagehide", onUnload);
+        window.addEventListener("beforeunload", onUnload);
+
+        return () => {
+            window.removeEventListener("pagehide", onUnload);
+            window.removeEventListener("beforeunload", onUnload);
+        }
+    },[])
+
 
 
     function connectToRoom(newRoomCode, displayName, onReply, onNewDrawing, onErase, onRoomEnd){
@@ -205,7 +220,7 @@ export function SessionProvider({children}) {
         })
     }
 
-    const disconnectFromRoom = () => {
+    function cleanupRoomConnection(){
         if(host.current){
             endRoom();
             host.current = false;
@@ -217,6 +232,9 @@ export function SessionProvider({children}) {
         roomCode.current = null;
         setCollaborators([]);
         pendingOnConnectActions.current = []
+    }
+    const disconnectFromRoom = () => {
+        cleanupRoomConnection();
         navigate("/");
     };
 

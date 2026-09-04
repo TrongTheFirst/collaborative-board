@@ -1,5 +1,5 @@
 import {createContext, useCallback, useContext, useState, useRef, useEffect } from "react";
-import { useParams } from "react-router-dom"
+import { useParams, useNavigate} from "react-router-dom"
 import {useAuth} from "./AuthContext.jsx";
 import {useSession} from "./SessionContext.jsx";
 import {useNotif} from "./NotificationContext.jsx";
@@ -14,9 +14,10 @@ when boardId changes, fetch drawings or add board
 const BoardContext = createContext(null);
 export function BoardProvider({ children }) {
 
-    const { userId, displayName, BASE_URL} = useAuth();
+    const { userId, displayName, expiration, BASE_URL, logout} = useAuth();
     const { connectToRoom, disconnectFromRoom, isInRoom } = useSession();
     const { showNotif } = useNotif();
+    const navigate = useNavigate();
     const [drawings,setDrawings] = useState([]);
     const [drawingsLoaded, setDrawingsLoaded] = useState(false);
     const currentBoard = useRef(null);
@@ -244,6 +245,29 @@ export function BoardProvider({ children }) {
     }
 
 
+    useEffect(() => {
+        if (!expiration) return;
+
+        const expiresInMs = expiration* 1000 - Date.now();
+
+        if(expiresInMs <= 0) {
+            logout();
+            return;
+        }else if(expiresInMs <= 30) {
+            showNotif("Forced logout in 30 seconds")
+        } else if(expiresInMs <= 600) {
+            showNotif("Forced logout in 10 minutes")
+        }
+
+        const handleExpire = () =>{
+            logout();
+            clearBoard();
+            navigate("/")
+            showNotif("Forced logout")
+        }
+        const timer = setTimeout(handleExpire, expiresInMs);
+        return () => clearTimeout(timer);
+    }, [expiration])
 
     return (
         <BoardContext.Provider
