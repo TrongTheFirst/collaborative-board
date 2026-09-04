@@ -4,8 +4,13 @@ export const RECTANGLE_STYLE = {
     strokeWidth: 2,
     strokeStyle: "solid",
     roundness: null,
-
 }
+const STROKE_DASH_PATTERNS = {
+    solid: [],
+    dashed: [5, 4],
+    dotted: [1.5, 4],
+};
+
 function toRoughOptions(drawing) {
     return {
         roughness: drawing.roughness ?? RECTANGLE_STYLE.roughness,
@@ -19,7 +24,10 @@ function toRoughOptions(drawing) {
 
 
 export function drawRectangleElement(rc, drawing){
+    const dash = STROKE_DASH_PATTERNS[drawing.strokeStyle] ?? STROKE_DASH_PATTERNS.solid;
+    rc.ctx.setLineDash(dash);
     rc.rectangle(drawing.x, drawing.y, drawing.width, drawing.height, toRoughOptions(drawing));
+    rc.ctx.setLineDash([])
 }
 
 export function createRectangleTool(previewRc, previewCanvas){
@@ -36,7 +44,10 @@ export function createRectangleTool(previewRc, previewCanvas){
         const width = Math.abs(ending.x - starting.x);
         const height = Math.abs(ending.y - starting.y);
 
+        const dash = STROKE_DASH_PATTERNS[RECTANGLE_STYLE.strokeStyle] ?? STROKE_DASH_PATTERNS.solid;
+        ctx.setLineDash(dash);
         previewRc.rectangle(x, y, width, height, toRoughOptions(RECTANGLE_STYLE));
+        ctx.setLineDash([]);
     }
 
     function onPointerDown(e){

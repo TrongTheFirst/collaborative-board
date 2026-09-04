@@ -3,10 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { LogIn, UserPlus } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useBoard } from "../contexts/BoardContext.jsx";
+import { useSession } from "../contexts/SessionContext.jsx";
 
 function LoginModal({ isLogin, setOpenLoginModal, setOpenCreateModal }) {
     const { login, BASE_URL } = useAuth();
     const { getBoard, editBoard} = useBoard();
+    const { inSession, isHost } = useSession();
 
 
     const API_URL = BASE_URL + "/user";
@@ -46,8 +48,14 @@ function LoginModal({ isLogin, setOpenLoginModal, setOpenCreateModal }) {
             login(payload.token);
             setOpenLoginModal(false);
             const board = getBoard();
-            if(board != null && board.ownerId === 0){
-                editBoard(board, payload.token, payload.userId)
+            if(board != null && board.ownerId === 0){//either ownerless or host of session
+                if(inSession){
+                    if(isHost()){
+                        editBoard(board, payload.token, payload.userId)
+                    }
+                }else{
+                    editBoard(board, payload.token, payload.userId)
+                }
             }
         } catch (err) {
             setError(err.message);

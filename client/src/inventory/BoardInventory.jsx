@@ -11,7 +11,7 @@ function BoardInventory(){
 
     useEffect(() => {
         fetchBoards();
-    }, [userId]);
+    }, [userId, userBoards]);
 
     async function fetchBoards(){
         const token = localStorage.getItem("token");
@@ -22,7 +22,8 @@ function BoardInventory(){
         });
         if(response.ok){
             const payload = await response.json();
-            setUserBoards(payload);
+            const filtered = payload.filter(b => !b.trashed);
+            setUserBoards(filtered);
         }
         else{
             console.error(await response.text());
@@ -30,23 +31,29 @@ function BoardInventory(){
     }
 
     return (
-        <div className="flex h-screen flex-col md:flex-row overflow-hidden">
-            <BoardInventorySidebar />
+        <>
+            <div className="flex h-screen flex-col md:flex-row overflow-hidden">
+                <BoardInventorySidebar />
 
-            <div className="flex flex-1 flex-col">
-                <BoardToolbar
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                />
-
-                <div className="px-5 pb-5">
-                    <BoardInventoryTable
-                        boards={userBoards}
+                <div className="flex flex-1 flex-col">
+                    <BoardToolbar
                         searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
                     />
+
+                    <div className="px-5 pb-4">
+                        <h1 className="text-2xl font-bold text-gray-900">My Boards</h1>
+                    </div>
+
+                    <div className="px-5 pb-5">
+                        <BoardInventoryTable
+                            boards={userBoards}
+                            searchQuery={searchQuery}
+                        />
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
 export default BoardInventory;

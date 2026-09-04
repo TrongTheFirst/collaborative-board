@@ -2,7 +2,7 @@ import {useState, useEffect} from "react";
 import BoardInventoryTableRow from "./BoardInventoryTableRow.jsx";
 import { ArrowUp, ArrowDown} from "lucide-react";
 
-function BoardInventoryTable({boards, searchQuery}) {
+function BoardInventoryTable({boards, searchQuery, trash=false, onTrash}) {
 
     const [filteredBoards, setFilteredBoards] = useState([]);
     const [sortBy, setSortBy] = useState("Date created");
@@ -70,14 +70,14 @@ function BoardInventoryTable({boards, searchQuery}) {
         return (
             <div className="flex flex-col items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white py-16 text-center shadow-sm">
                 <p className="text-sm font-medium text-gray-900">No boards yet</p>
-                <p className="text-sm text-gray-500">Boards you create will show up here.</p>
+                <p className="text-sm text-gray-500">Boards you {trash? "delete" : "create"} will show up here.</p>
             </div>
         );
     }
 
     return (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <div className="max-h-[calc(100vh-220px)] overflow-y-auto">
+            <div className="max-h-[calc(100vh-220px)] min-h-[320px] overflow-y-auto">
                 <table className="w-full text-left text-sm">
                     <thead className="sticky top-0 z-10 bg-white">
                         <tr className="border-b border-gray-100">
@@ -92,7 +92,7 @@ function BoardInventoryTable({boards, searchQuery}) {
                     </thead>
                     <tbody>
                     {filteredBoards.map((board) => (
-                        <BoardInventoryTableRow key={board.boardId} board={board} />
+                        <BoardInventoryTableRow key={board.boardId} board={board} trash={trash} onTrash={onTrash}/>
                     ))}
                     </tbody>
                 </table>

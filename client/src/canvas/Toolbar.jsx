@@ -12,7 +12,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
         { icon: Type, label: "Text", tool: "text" },
         { icon: Eraser, label: "Erase", tool: "eraser" },
     ];
-    const { viewMode, isHost} = useSession();
+    const { viewMode, isHost, inSession} = useSession();
 
     function toolButtonClasses(tool) {
         const isActive = tool !== null && tool === activeTool;
@@ -29,6 +29,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                         <button
                             key={label}
                             aria-label={label}
+                            title={label}
                             disabled={viewMode && !isHost()}
                             className={toolButtonClasses(tool)}
 
@@ -43,6 +44,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                         <button
                             key={label}
                             aria-label={label}
+                            title={label}
                             disabled={viewMode && !isHost()}
                             onClick={tool ? () => setActiveTool(tool) : undefined}
                             className={toolButtonClasses(tool)}
@@ -55,6 +57,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                         <button
                             key={label}
                             aria-label={label}
+                            title={label}
                             disabled={viewMode && !isHost()}
                             onClick={tool ? () => setActiveTool(tool) : undefined}
                             className={toolButtonClasses(tool)}
@@ -66,8 +69,9 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                     <div className="group relative">
                         <button
                             aria-label="Trash"
-                            disabled={viewMode && !isHost()}
-                            className="art-button w-10 h-10 "
+                            title={"Clear board"}
+                            disabled={inSession()}
+                            className={`art-button w-10 h-10 ${inSession() ? "opacity-40 cursor-not-allowed hover:bg-transparent":""}`}
                             onClick={() => {
                                 clearDrawings();
                                 clearCanvas();

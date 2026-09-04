@@ -1,9 +1,16 @@
+import {RECTANGLE_STYLE} from "./Rectangle.js";
+
 export const ELLIPSE_STYLE = {
     roughness: 0,
     strokeColor: "#000000",
     strokeWidth: 2,
     strokeStyle: "solid",
 }
+const STROKE_DASH_PATTERNS = {
+    solid: [],
+    dashed: [5, 4],
+    dotted: [1.5, 4],
+};
 function toRoughOptions(drawing) {
     return {
         roughness: drawing.roughness ?? ELLIPSE_STYLE.roughness,
@@ -16,7 +23,10 @@ function toRoughOptions(drawing) {
 
 
 export function drawEllipseElement(rc, drawing){
+    const dash = STROKE_DASH_PATTERNS[drawing.strokeStyle] ?? STROKE_DASH_PATTERNS.solid;
+    rc.ctx.setLineDash(dash);
     rc.ellipse(drawing.x, drawing.y, drawing.width, drawing.height, toRoughOptions(drawing));
+    rc.ctx.setLineDash([]);
 }
 
 export function createEllipseTool(previewRc, previewCanvas){
@@ -40,7 +50,10 @@ export function createEllipseTool(previewRc, previewCanvas){
         ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
 
         const {x, y, width, height} = getCoords();
+        const dash = STROKE_DASH_PATTERNS[ELLIPSE_STYLE.strokeStyle] ?? STROKE_DASH_PATTERNS.solid;
+        ctx.setLineDash(dash);
         previewRc.ellipse(x, y, width, height, toRoughOptions(ELLIPSE_STYLE));
+        ctx.setLineDash([]);
     }
 
     function onPointerDown(e){

@@ -1,9 +1,16 @@
+import {RECTANGLE_STYLE} from "./Rectangle.js";
+
 export const LINE_STYLE = {
     roughness: 0,
     strokeColor: "#000000",
     strokeWidth: 2,
     strokeStyle: "solid",
 }
+const STROKE_DASH_PATTERNS = {
+    solid: [],
+    dashed: [5, 4],
+    dotted: [1.5, 4],
+};
 
 function toRoughOptions(drawing) {
     return {
@@ -16,7 +23,19 @@ function toRoughOptions(drawing) {
 }
 
 export function drawLineElement(rc, drawing){
+    if(drawing.strokeStyle === "solid"){
+        rc.ctx.lineCap = "round";
+        rc.ctx.lineJoin = "round";
+    }
+
+    const dash = STROKE_DASH_PATTERNS[drawing.strokeStyle] ?? STROKE_DASH_PATTERNS.solid;
+    rc.ctx.setLineDash(dash);
+
     rc.line(drawing.x, drawing.y, drawing.x2, drawing.y2, toRoughOptions(drawing));
+
+    rc.ctx.setLineDash([])
+    rc.ctx.lineCap = "butt";
+    rc.ctx.lineJoin = "miter";
 }
 
 export function createLineTool(previewRc, previewCanvas){
@@ -26,8 +45,20 @@ export function createLineTool(previewRc, previewCanvas){
 
     function drawPreview(){
         const ctx = previewCanvas.getContext("2d");
+        if(LINE_STYLE.strokeStyle === "solid"){
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+        }
+
         ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        const dash = STROKE_DASH_PATTERNS[LINE_STYLE.strokeStyle] ?? STROKE_DASH_PATTERNS.solid;
+        ctx.setLineDash(dash);
+
         previewRc.line(starting.x, starting.y, ending.x, ending.y, toRoughOptions(LINE_STYLE));
+
+        ctx.setLineDash([]);
+        ctx.lineCap = "butt";
+        ctx.lineJoin = "miter";
     }
 
     function onPointerDown(e){

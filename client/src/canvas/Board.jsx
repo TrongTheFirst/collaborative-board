@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation} from "react-router-dom";
 import rough from "roughjs/bin/rough";
 import Toolbar from "./Toolbar.jsx";
 import OptionsBar from "./OptionsBar.jsx";
+import Customization from "./Customization.jsx";
 import { useSession} from "../contexts/SessionContext.jsx";
 import {useBoard}  from "../contexts/BoardContext.jsx";
 import { useNotif } from "../contexts/NotificationContext.jsx";
@@ -148,7 +149,7 @@ function Board(){
         const previewCanvas = previewCanvasRef.current;
         const previewRc = rough.canvas(previewCanvas);
 
-        const pencil = createPencilTool(rc);
+        const pencil = createPencilTool(previewRc, previewCanvas);
         const text = createTextTool(previewRc, previewCanvas, setTextInput);
         const rectangle = createRectangleTool(previewRc, previewCanvas);
         const ellipse = createEllipseTool(previewRc, previewCanvas);
@@ -261,7 +262,8 @@ function Board(){
 
     return(
         <>
-            <div className="flex justify-end">
+            <div className="flex">
+                <Customization currTool={activeTool}/>
                 <Toolbar clearDrawings={clearDrawings}
                          clearCanvas={clearCanvas}
                          deleteAllBoardElements={deleteAllBoardElements}

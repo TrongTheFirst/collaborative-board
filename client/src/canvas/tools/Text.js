@@ -64,6 +64,7 @@ export function createTextTool(previewRc, previewCanvas, onPlace){
             strokeStyle: "dashed",
             roundness: null,
         });
+        ctx.setLineDash([0])
     }
 
     function onPointerDown(e){

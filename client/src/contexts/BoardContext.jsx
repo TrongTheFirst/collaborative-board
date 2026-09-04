@@ -78,7 +78,9 @@ export function BoardProvider({ children }) {
             ownerId: 0,
             boardName: "Board",
             createdAt: Temporal.Now.plainDateTimeISO(),
-            updatedAt: Temporal.Now.plainDateTimeISO()
+            updatedAt: Temporal.Now.plainDateTimeISO(),
+            isTrashed: false,
+            trashedAt: null,
         }
         if(token){
             headers.Authorization = `Bearer ${token}`;
@@ -133,7 +135,9 @@ export function BoardProvider({ children }) {
             ownerId: userId,
             boardName: board.boardName,
             createdAt: board.createdAt,
-            updatedAt: Temporal.Now.plainDateTimeISO()
+            updatedAt: Temporal.Now.plainDateTimeISO(),
+            isTrashed: board.trashed,
+            trashedAt: board.trashedAt
         }
         const response = await fetch(BASE_URL+`/board/edit`,{
             method:"PUT",
@@ -145,6 +149,21 @@ export function BoardProvider({ children }) {
             throw new Error(`Request failed: ${response.status}`);
         }
         setBoard(toUpdate)
+    }
+    async function deleteBoard(boardId){
+        const token = localStorage.getItem("token");
+        const headers = {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        };
+        const response = await fetch(BASE_URL+`/board/delete`,{
+            method:"DELETE",
+            headers: headers,
+            body: JSON.stringify({ boardId, ownerId: userId})
+        });
+        if(!response.ok){
+            console.error(`Request failed: ${response.status}`);
+        }
     }
     async function addDrawing(boardElement){
         try{
@@ -245,6 +264,7 @@ export function BoardProvider({ children }) {
     }
 
 
+    //logout timer
     useEffect(() => {
         if (!expiration) return;
 
@@ -278,6 +298,7 @@ export function BoardProvider({ children }) {
                 setBoard,
                 addBoard,
                 editBoard,
+                deleteBoard,
                 loadBoard,
                 clearBoard,
                 drawings,

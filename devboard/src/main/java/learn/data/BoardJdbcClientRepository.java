@@ -20,7 +20,7 @@ public class BoardJdbcClientRepository implements BoardRepository {
     @Override
     public Board findById(long id) throws DataAccessException{
         final String sql = """
-                select board_id, owner_id, name, created_at, updated_at
+                select board_id, owner_id, name, created_at, updated_at, is_trashed, trashed_at
                 from board where board_id = ?;
                 """;
         return jdbcClient.sql(sql)
@@ -43,7 +43,7 @@ public class BoardJdbcClientRepository implements BoardRepository {
     @Override
     public List<Board> findByUserId(long userId) throws DataAccessException{
         final String sql = """
-                select board_id, owner_id, name, created_at, updated_at
+                select board_id, owner_id, name, created_at, updated_at, is_trashed, trashed_at
                 from board where owner_id = ?;
                 """;
         return jdbcClient.sql(sql)
@@ -55,8 +55,8 @@ public class BoardJdbcClientRepository implements BoardRepository {
     @Override
     public Board create(Board board) throws DataAccessException{
         final String sql = """
-                insert into board (owner_id, name, created_at, updated_at) values
-                (:owner_id, :name, :created_at, :updated_at);
+                insert into board (owner_id, name, created_at, updated_at, is_trashed, trashed_at) values
+                (:owner_id, :name, :created_at, :updated_at,  :is_trashed, :trashed_at);
                 """;
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -65,6 +65,8 @@ public class BoardJdbcClientRepository implements BoardRepository {
                 .param("name",board.getBoardName())
                 .param("created_at",board.getCreatedAt())
                 .param("updated_at",board.getUpdatedAt())
+                .param("is_trashed", board.isTrashed())
+                .param("trashed_at",board.getTrashedAt())
                 .update(keyHolder,"board_id");
 
         if (rowsAffected == 0) {
@@ -81,7 +83,9 @@ public class BoardJdbcClientRepository implements BoardRepository {
                 owner_id = :owner_id,
                 name = :name,
                 created_at = :created_at,
-                updated_at = :updated_at
+                updated_at = :updated_at,
+                is_trashed = :is_trashed,
+                trashed_at = :trashed_at
                 where board_id = :board_id;
         """;
 
@@ -90,6 +94,8 @@ public class BoardJdbcClientRepository implements BoardRepository {
                 .param("name",board.getBoardName())
                 .param("created_at",board.getCreatedAt())
                 .param("updated_at",board.getUpdatedAt())
+                .param("is_trashed",board.isTrashed())
+                .param("trashed_at",board.getTrashedAt())
                 .param("board_id",board.getBoardId())
                 .update() > 0;
     }
