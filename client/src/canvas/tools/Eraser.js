@@ -1,6 +1,8 @@
 import {drawPencilElement} from "./Pencil.js";
 import {drawTextElement} from "./Text.js";
 import {drawRectangleElement} from "./Rectangle.js";
+import {drawEllipseElement} from "./Ellipse.js";
+import {drawLineElement} from "./Line.js";
 
 const ERASER_RADIUS = 4;
 
@@ -107,7 +109,8 @@ function segmentHitsDrawing(p1, p2, drawing) {
     return false;
 }
 
-export function createEraserTool(previewRc, previewCanvas, drawings){
+
+export function createEraserTool(previewRc, previewCanvas, drawings, onErase){
     let isErasing = false;
     let toErase = new Set();
     let lastPoint = null;
@@ -115,11 +118,16 @@ export function createEraserTool(previewRc, previewCanvas, drawings){
     function eraseAt(x,y){
         const prev = lastPoint ?? { x, y };
         lastPoint = { x, y };
+        let erased = false;
         for(let i = drawings.length - 1; i >= 0; i--){
-            if(pointsHitDrawing(x,y, drawings[i]) || segmentHitsDrawing(prev, { x, y }, drawings[i])){
-                toErase.add(drawings[i]);
+            const drawing = drawings[i];
+            if(!drawing.beingErased && (pointsHitDrawing(x,y, drawings[i]) || segmentHitsDrawing(prev, { x, y }, drawings[i]))){
+                drawing.beingErased = true;
+                erased = true;
+                toErase.add(drawing);
             }
         }
+        if(erased) onErase();
     }
 
     function onPointerDown(e){

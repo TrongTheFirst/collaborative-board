@@ -162,10 +162,12 @@ export function BoardProvider({ children }) {
     }
     async function deleteDrawingByClientId(clientId){
         const token = localStorage.getItem("token");
+        const headers = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
         try{
             const response = await fetch(BASE_URL+`/element/delete/${boardId}/${clientId}`,{
                 method:"DELETE",
-                headers: { "Authorization": `Bearer ${token}` }
+                headers
             });
             if (!response.ok) {
                 throw new Error(`Failed to delete element: ${response.status}`);
@@ -177,12 +179,12 @@ export function BoardProvider({ children }) {
     }
     async function deleteAllBoardElements(){
         const token = localStorage.getItem("token");
+        const headers = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
         try{
             const response = await fetch(BASE_URL+`/element/delete/${boardId}`,{
                 method:"DELETE",
-                headers :{
-                    "Authorization": `Bearer ${token}`
-                }
+                headers
             });
             if (!response.ok) {
                 throw new Error(`Failed to delete board elements: ${response.status}`);

@@ -12,7 +12,7 @@ import LoginModal from "../users/LoginModal.jsx"
 import CreateModal from "../users/CreateModal.jsx"
 import NotificationBanner from "../components/NotificationBanner.jsx"
 import { createPencilTool, drawPencilElement } from "./tools/Pencil.js";
-import { createTextTool, drawTextElement, TEXT_STYLE} from "./tools/Text.js";
+import { createTextTool, drawTextElement, commitTextTool, TEXT_STYLE} from "./tools/Text.js";
 import { createRectangleTool, drawRectangleElement } from "./tools/Rectangle.js";
 import { createEllipseTool, drawEllipseElement } from "./tools/Ellipse.js";
 import { createLineTool, drawLineElement } from "./tools/Line.js"
@@ -37,6 +37,8 @@ function Board(){
     const previewCanvasRef = useRef(null);
     const previewRcRef = useRef(null);
     const drawingsRef = useRef(drawings);
+    const drawingsCopyRef = useRef([]);
+    const [drawingsCopy, setDrawingsCopy] = useState([]);
     const pageInitializedRef = useRef(false);
     const drawingsCountRef = useRef(0);
     const textAreaRef = useRef(null);
@@ -70,23 +72,40 @@ function Board(){
         }
     }
 
+    function hexToRgba(hex, opacity = 1) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+    function toFaded(drawing){
+        if(!drawing.beingErased) return drawing;
+        return drawing.type === "text"
+            ? { ...drawing, fillStyle: hexToRgba(drawing.fillStyle ?? "#000000", 0.35) }
+            : { ...drawing, strokeColor: hexToRgba(drawing.strokeColor ?? "#000000", 0.35) };
+    }
+
     function drawBoard(elements = drawingsRef.current){
         const canvas = canvasRef.current;
         const rc = rough.canvas(canvas);
         const ctx = canvas.getContext("2d");
 
         elements.forEach((drawing) => {
-            if(drawing.type === "text"){
-                drawElement(ctx, drawing);
+            const faded = toFaded(drawing);
+            if(faded.type === "text"){
+                drawElement(ctx, faded);
             }
             else{
-                drawElement(rc, drawing)
+                drawElement(rc, faded)
             }
         });
     }
 
     useEffect(() => {
         drawingsRef.current = drawings;
+        drawingsCopyRef.current = drawings.map(d => ({...d, beingErase:false}));
+        setDrawingsCopy(drawingsCopyRef.current);
+
         if (!canvasRef.current) return;
         if(drawings.length < drawingsCountRef.current){//reset tracking
             clearCanvas();
@@ -106,6 +125,12 @@ function Board(){
         }
 
     }, [drawings, drawingsLoaded]);
+
+    useEffect(() => {
+        if (!canvasRef.current || !pageInitializedRef.current) return;
+        clearCanvas();
+        drawBoard(drawingsCopy);
+    }, [drawingsCopy]);
 
     useEffect(() => {activeToolRef.current = activeTool;}, [activeTool]);
 
@@ -128,7 +153,7 @@ function Board(){
         const rectangle = createRectangleTool(previewRc, previewCanvas);
         const ellipse = createEllipseTool(previewRc, previewCanvas);
         const line = createLineTool(previewRc, previewCanvas);
-        const eraser = createEraserTool(previewRc, previewCanvas, drawings);
+        const eraser = createEraserTool(previewRc, previewCanvas, drawingsCopyRef.current, () => setDrawingsCopy([...drawingsCopyRef.current]));
         const tools = { pencil, rectangle, ellipse, line, text, eraser};
         let getActiveTool = () => tools[activeToolRef.current] ?? pencil;
 
@@ -208,25 +233,10 @@ function Board(){
     }, [boardId, drawings, viewMode]);
 
     function commitText() {
-        const value = textAreaRef.current?.value.trim();
-        const box = textInput;
+        const drawing = commitTextTool(previewCanvasRef.current, textAreaRef.current, textInput);
         setTextInput(null);
 
-        const preCtx = previewCanvasRef.current.getContext("2d");
-        preCtx.clearRect(0, 0, previewCanvasRef.current.width, previewCanvasRef.current.height);
-
-        if (!value || !box) return;
-
-        const drawing = {
-            clientId: crypto.randomUUID(),
-            type: "text",
-            x: box.x,
-            y: box.y,
-            width: box.width,
-            height: box.height,
-            text: value,
-            ...TEXT_STYLE,
-        };
+        if (!drawing) return;
 
         const {type, ...elementData} = drawing;
         const boardElement = { elementId: 0, boardId, type, elementData };

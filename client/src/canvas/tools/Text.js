@@ -13,8 +13,30 @@ export function drawTextElement(ctx, drawing){
     ctx.fillText(drawing.text, drawing.x, drawing.y);
 }
 
+export function commitTextTool(previewCanvas, textArea, box){
+    const value = textArea?.value.trim();
+
+    const ctx = previewCanvas.getContext("2d");
+    ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+    if (!value || !box) return null;
+
+    return {
+        clientId: crypto.randomUUID(),
+        type: "text",
+        x: box.x,
+        y: box.y,
+        width: box.width,
+        height: box.height,
+        text: value,
+        ...TEXT_STYLE,
+    };
+}
+
+
 const MIN_WIDTH = 60;
 const MIN_HEIGHT = 30;
+
 
 export function createTextTool(previewRc, previewCanvas, onPlace){
     let isWriting = false;
