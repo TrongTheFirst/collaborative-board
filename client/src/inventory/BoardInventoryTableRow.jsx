@@ -6,7 +6,7 @@ import {useAuth} from "../contexts/AuthContext.jsx";
 import ProfileDropdown from "../components/ProfileDropdown.jsx";
 import BoardInventoryTableRowMenu from "./BoardInventoryTableRowMenu.jsx";
 
-function BoardInventoryTableRow({ board, trash, onTrash}) {
+function BoardInventoryTableRow({ board, trash, onChange}) {
     const {loadBoard, editBoard} = useBoard();
     const {token, userId} = useAuth();
     const navigate = useNavigate();
@@ -83,7 +83,7 @@ function BoardInventoryTableRow({ board, trash, onTrash}) {
             <td className="px-5 py-3">{dateFormat(board.updatedAt)}</td>
             <td onDoubleClick={(e)=> e.stopPropagation()}
             >
-                <BoardInventoryTableRowMenu board={board} renameRef={inputRef} trash={trash} onTrash={onTrash}/>
+                <BoardInventoryTableRowMenu board={board} renameRef={inputRef} trash={trash} onChange={onChange}/>
             </td>
         </tr>
     );

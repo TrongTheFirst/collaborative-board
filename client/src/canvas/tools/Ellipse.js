@@ -47,7 +47,10 @@ export function createEllipseTool(previewRc, previewCanvas){
 
     function drawPreview() {
         const ctx = previewCanvas.getContext("2d");
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        ctx.restore();
 
         const {x, y, width, height} = getCoords();
         const dash = STROKE_DASH_PATTERNS[ELLIPSE_STYLE.strokeStyle] ?? STROKE_DASH_PATTERNS.solid;

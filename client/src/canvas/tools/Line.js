@@ -50,7 +50,10 @@ export function createLineTool(previewRc, previewCanvas){
             ctx.lineJoin = "round";
         }
 
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        ctx.restore();
         const dash = STROKE_DASH_PATTERNS[LINE_STYLE.strokeStyle] ?? STROKE_DASH_PATTERNS.solid;
         ctx.setLineDash(dash);
 

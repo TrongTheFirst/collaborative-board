@@ -67,7 +67,10 @@ export function createPencilTool(previewRc, previewCanvas) {
 
     function drawPreview() {
         const ctx = previewCanvas.getContext("2d");
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        ctx.restore();
 
         if (points.length < 2) return;
 
@@ -93,15 +96,11 @@ export function createPencilTool(previewRc, previewCanvas) {
     function onPointerMove(e) {
         if (!isDrawing) return;
 
-        const point = {
-            x: e.clientX - starting.x,
-            y: e.clientY - starting.y,
-        };
-        //dont record every point to avoid choppiness
+        const point = { x: e.clientX - starting.x, y: e.clientY - starting.y };
         const last = points[points.length - 1];
         const dx = point.x - last.x;
         const dy = point.y - last.y;
-        if (dx * dx + dy * dy < (MIN_POINT_DISTANCE**2)) return;
+        if (dx * dx + dy * dy < MIN_POINT_DISTANCE ** 2) return;
 
         points.push(point);
         drawPreview();
@@ -111,10 +110,7 @@ export function createPencilTool(previewRc, previewCanvas) {
         if (!isDrawing) return null;
         isDrawing = false;
 
-        if (points.length < 2) {
-            points = [];
-            return null;
-        }
+        if (points.length < 2) { points = []; return null; }
 
         const drawing = {
             clientId: crypto.randomUUID(),

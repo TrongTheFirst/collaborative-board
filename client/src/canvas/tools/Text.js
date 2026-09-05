@@ -53,7 +53,10 @@ export function createTextTool(previewRc, previewCanvas, onPlace){
 
     function drawPreview() {
         const ctx = previewCanvas.getContext("2d");
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        ctx.restore();
         ctx.setLineDash([5,10])
 
         const { x, y, width, height } = getTextBox();

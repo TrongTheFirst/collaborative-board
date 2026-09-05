@@ -37,7 +37,10 @@ export function createRectangleTool(previewRc, previewCanvas){
 
     function drawPreview() {
         const ctx = previewCanvas.getContext("2d");
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+        ctx.restore();
 
         const x = Math.min(starting.x, ending.x);
         const y = Math.min(starting.y, ending.y);

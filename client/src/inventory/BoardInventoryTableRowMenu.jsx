@@ -5,7 +5,7 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { useBoard } from "../contexts/BoardContext.jsx";
 import { useClickOutside } from "../components/useClickOutside.js";
 
-export default function BoardInventoryTableRowMenu({board, renameRef, trash, onTrash}) {
+export default function BoardInventoryTableRowMenu({board, renameRef, trash, onChange}) {
     const { userId, token } = useAuth();
     const { loadBoard, editBoard, deleteBoard } = useBoard();
     const [open, setOpen] = useState(false);
@@ -69,6 +69,7 @@ export default function BoardInventoryTableRowMenu({board, renameRef, trash, onT
                                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors cursor-pointer"
                                 onClick={() => {
                                     editBoard({...board, trashed: true, trashedAt: Temporal.Now.plainDateTimeISO()}, token, userId);
+                                    onChange(board.boardId);
                                     setOpen(false);
                                 }}
                             >
@@ -87,6 +88,7 @@ export default function BoardInventoryTableRowMenu({board, renameRef, trash, onT
                                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors cursor-pointer"
                                 onClick={() => {
                                     editBoard({...board, trashed: false, trashedAt: null}, token, userId);
+                                    onChange(board.boardId);
                                     setOpen(false);
                                 }}
                             >
@@ -100,7 +102,7 @@ export default function BoardInventoryTableRowMenu({board, renameRef, trash, onT
                                 className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors cursor-pointer"
                                 onClick={() => {
                                     deleteBoard(board.boardId);
-                                    onTrash(board.boardId);
+                                    onChange(board.boardId);
                                     setOpen(false);
                                 }}
                             >

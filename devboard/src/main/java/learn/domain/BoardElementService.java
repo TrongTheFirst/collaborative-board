@@ -3,11 +3,13 @@ package learn.domain;
 import learn.data.DataAccessException;
 import learn.data.repository_interface.BoardElementRepository;
 import learn.data.repository_interface.BoardRepository;
+import learn.models.Board;
 import learn.models.BoardElement;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -42,13 +44,16 @@ public class BoardElementService {
             return result;
         }
 
-        if(boardRepository.findById(boardElement.getBoardId()) == null){
+        Board board = boardRepository.findById(boardElement.getBoardId());
+        if(board == null){
             result.addErrorMessage("Board %s was not found", ResultType.NOT_FOUND, boardElement.getBoardId());
         }
 
         if(result.isSuccess()){
             BoardElement created = repository.add(boardElement);
             result.setPayload(created);
+            board.setUpdatedAt(LocalDateTime.now());
+            boardRepository.update(board);
         }
         return result;
     }

@@ -11,7 +11,7 @@ function BoardInventory(){
 
     useEffect(() => {
         fetchBoards();
-    }, [userId, userBoards]);
+    }, [userId]);
 
     async function fetchBoards(){
         const token = localStorage.getItem("token");
@@ -29,6 +29,11 @@ function BoardInventory(){
             console.error(await response.text());
         }
     }
+
+    function onChange(boardId){
+        setUserBoards((prev) => prev.filter((b) => b.boardId !== boardId));
+    }
+
 
     return (
         <>
@@ -49,6 +54,7 @@ function BoardInventory(){
                         <BoardInventoryTable
                             boards={userBoards}
                             searchQuery={searchQuery}
+                            onChange={onChange}
                         />
                     </div>
                 </div>

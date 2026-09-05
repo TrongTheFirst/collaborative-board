@@ -31,6 +31,7 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                             aria-label={label}
                             title={label}
                             disabled={viewMode && !isHost()}
+                            onClick={tool ? () => setActiveTool(tool) : undefined}
                             className={toolButtonClasses(tool)}
 
                         >

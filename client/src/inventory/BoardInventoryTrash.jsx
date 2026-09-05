@@ -30,7 +30,7 @@ function BoardInventoryTrash(){
         }
     }
 
-    function handleBoardTrashed(boardId){
+    function onChange(boardId){
         setUserBoards((prev) => prev.filter((b) => b.boardId !== boardId));
     }
 
@@ -55,7 +55,7 @@ function BoardInventoryTrash(){
                             boards={userBoards}
                             searchQuery={searchQuery}
                             trash={true}
-                            onTrash={handleBoardTrashed}
+                            onChange={onChange}
                         />
                     </div>
                 </div>

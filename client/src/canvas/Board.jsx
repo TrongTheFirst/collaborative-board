@@ -18,6 +18,7 @@ import { createRectangleTool, drawRectangleElement } from "./tools/Rectangle.js"
 import { createEllipseTool, drawEllipseElement } from "./tools/Ellipse.js";
 import { createLineTool, drawLineElement } from "./tools/Line.js"
 import { createEraserTool } from "./tools/Eraser.js";
+import { createHandTool } from "./tools/Hand.js";
 
 function Board(){
     const [openCollabStartModal, setOpenCollabStartModal] = useState(false);
@@ -44,11 +45,16 @@ function Board(){
     const drawingsCountRef = useRef(0);
     const textAreaRef = useRef(null);
     const activeToolRef = useRef(activeTool);
+    const panOffsetRef = useRef({x: 0, y: 0});
 
 
     function clearCanvas(){
         const ctx = canvasRef.current.getContext("2d");
         ctx.clearRect(0,0,canvasRef.current.width, canvasRef.current.height);
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+        ctx.restore();
     }
 
     function drawElement(canvas, drawing){
@@ -100,6 +106,11 @@ function Board(){
                 drawElement(rc, faded)
             }
         });
+
+    }
+
+    function applyTransform(ctx){
+        ctx.setTransform(1, 0, 0, 1, panOffsetRef.current.x, panOffsetRef.current.y);
     }
 
     useEffect(() => {
@@ -149,13 +160,23 @@ function Board(){
         const previewCanvas = previewCanvasRef.current;
         const previewRc = rough.canvas(previewCanvas);
 
-        const pencil = createPencilTool(previewRc, previewCanvas);
+        const pencil = createPencilTool(previewRc, previewCanvas, panOffsetRef);
         const text = createTextTool(previewRc, previewCanvas, setTextInput);
         const rectangle = createRectangleTool(previewRc, previewCanvas);
         const ellipse = createEllipseTool(previewRc, previewCanvas);
         const line = createLineTool(previewRc, previewCanvas);
         const eraser = createEraserTool(previewRc, previewCanvas, drawingsCopyRef.current, () => setDrawingsCopy([...drawingsCopyRef.current]));
-        const tools = { pencil, rectangle, ellipse, line, text, eraser};
+        const hand = createHandTool( (dx,dy)=>{
+            panOffsetRef.current = {
+                x: panOffsetRef.current.x + dx,
+                y: panOffsetRef.current.y + dy
+            }
+            applyTransform(ctx);
+            applyTransform(previewRc.ctx);
+            clearCanvas();
+            drawBoard(drawingsRef.current);
+        }, panOffsetRef);
+        const tools = { pencil, rectangle, ellipse, line, text, eraser, hand};
         let getActiveTool = () => tools[activeToolRef.current] ?? pencil;
 
         if(viewMode && !isHost()){
@@ -168,27 +189,37 @@ function Board(){
             canvas.height = window.innerHeight;
             previewCanvas.width = window.innerWidth;
             previewCanvas.height = window.innerHeight;
+            applyTransform(ctx);
+            applyTransform(previewRc.ctx);
             drawBoard();
         };
         resize();
 
+        const toOffset = (e) => {
+            return {
+                clientX: e.clientX - panOffsetRef.current.x,
+                clientY: e.clientY - panOffsetRef.current.y,
+                pointerId: e.pointerId,
+            };
+        }
+
         const handlePointerDown = (e) => {
             canvas.setPointerCapture(e.pointerId);
-            getActiveTool().onPointerDown(e);
-            // const pre_ctx = previewCanvasRef.current.getContext("2d");
-            // pre_ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+            const offset = activeToolRef.current === "hand" ? e : toOffset(e);
+            getActiveTool().onPointerDown(offset);
         };
 
         const handlePointerMove = (e) => {
-            getActiveTool().onPointerMove(e);
+            const offset = activeToolRef.current === "hand" ? e : toOffset(e);
+            getActiveTool().onPointerMove(offset);
         };
 
         const handlePointerUp = (e) => {
             if (canvas.hasPointerCapture(e.pointerId)) {
                 canvas.releasePointerCapture(e.pointerId);
             }
-
-            const drawing = getActiveTool().onPointerUp(e);
+            const offset = activeToolRef.current === "hand" ? e : toOffset(e);
+            const drawing = getActiveTool().onPointerUp(offset);
             if (!drawing) return;
 
             if(activeToolRef.current === "eraser") {
@@ -286,8 +317,8 @@ function Board(){
                     onInput={handleTextAreaInput}
                     style={{
                         position: "fixed",
-                        left: textInput.x+3,
-                        top: textInput.y,
+                        left: textInput.x + panOffsetRef.current.x + 3,
+                        top: textInput.y + panOffsetRef.current.y,
                         width: textInput.width,
                         height: textInput.height,
                         font: `${TEXT_STYLE.fontWeight} ${TEXT_STYLE.fontSize} ${TEXT_STYLE.fontStyle}`,
