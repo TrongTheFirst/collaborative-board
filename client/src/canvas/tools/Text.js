@@ -117,7 +117,8 @@ export function createTextTool(previewRc, previewCanvas, onPlace){
         });
         ctx.setLineDash([0])
     }
-    function clearPreview(ctx){
+    function clearPreview(){
+        const ctx = previewCanvas.getContext("2d");
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);

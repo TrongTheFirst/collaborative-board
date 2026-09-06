@@ -52,11 +52,9 @@ function CreateModal({ setOpenCreateModal, setOpenLoginModal}) {
             login(payload.token);
             setOpenCreateModal(false);
             const board = getBoard();
-            if(board != null && board.ownerId === 0){//either ownerless or host of session
-                if(inSession){
-                    if(isHost()){
-                        editBoard(board, payload.token, payload.userId)
-                    }
+            if(board?.ownerId === 0){//either ownerless or host of session
+                if(isHost()){
+                    editBoard(board, payload.token, payload.userId)
                 }else{
                     editBoard(board, payload.token, payload.userId)
                 }
