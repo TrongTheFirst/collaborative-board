@@ -66,12 +66,18 @@ export function SessionProvider({children}) {
                 cleanupRoomConnection();
             }
         }
+        const beforeUnload = (e) => {
+            if(!isHost()) return;
+
+            e.preventDefault();
+            e.returnValue = "";
+        };
         window.addEventListener("pagehide", onUnload);
-        window.addEventListener("beforeunload", onUnload);
+        window.addEventListener("beforeunload", beforeUnload);
 
         return () => {
             window.removeEventListener("pagehide", onUnload);
-            window.removeEventListener("beforeunload", onUnload);
+            window.removeEventListener("beforeunload", beforeUnload);
         }
     },[])
 
@@ -99,7 +105,7 @@ export function SessionProvider({children}) {
                 if (!success) {
                     showNotif("Failed to connect to room...");
                     console.error(errors);
-                    onRoomEnd(isHost());
+                    subReq.onRoomEnd(isHost());
                     navigate("/")
                 } else {
                     sessionDisplayName.current = member.displayName;
@@ -107,7 +113,7 @@ export function SessionProvider({children}) {
                     host.current = member.roleId === 2;
                     setCollaborators(members);
                     elements = elements.map(element => ({ type: element.type, ...element.elementData }));
-                    onReply(boardId, elements);
+                    subReq.onReply(boardId, elements);
                     subscribeToRoom(newRoomCode, subReq.onNewDrawing, subReq.onErase, subReq.onUpdate, subReq.onRoomEnd)
                 }
                 replySub.unsubscribe();
@@ -185,6 +191,7 @@ export function SessionProvider({children}) {
         joinRoomSubscription.current = stompClient.current.subscribe(replyTopic+"/joined", (message) => {
             const {type, member} = JSON.parse(message.body);
             if(type === "join"){
+                if(collaborators.some(m=>m.id === member.id)) return;
                 showNotif(`${member.displayName} joined the room!`, false);
                 setCollaborators((prev) => {
                     const exists = prev.some((m) => m.id === member.id);

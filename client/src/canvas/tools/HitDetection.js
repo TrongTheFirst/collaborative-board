@@ -1,4 +1,4 @@
-const ERASER_RADIUS = 4;
+const HIT_RADIUS = 8;
 
 //Rectangle
 //Text
@@ -11,11 +11,11 @@ function hitBox(x, y, drawing) {
 
     const nearLeftOrRight =
         inBetween(y, top, bottom) &&
-        (Math.abs(x - left) <= ERASER_RADIUS || Math.abs(x - right) <= ERASER_RADIUS);
+        (Math.abs(x - left) <= HIT_RADIUS || Math.abs(x - right) <= HIT_RADIUS);
 
     const nearTopOrBottom =
         inBetween(x, left, right) &&
-        (Math.abs(y - top) <= ERASER_RADIUS || Math.abs(y - bottom) <= ERASER_RADIUS);
+        (Math.abs(y - top) <= HIT_RADIUS || Math.abs(y - bottom) <= HIT_RADIUS);
 
     return nearLeftOrRight || nearTopOrBottom;
 }
@@ -47,7 +47,7 @@ function hitPencil(x,y,drawing){
     const eraserPoint = {x,y}
     for(let i=0; i<points.length-1; i++){
         const dist = shortestDistanceBetweenPointAndLineSegment(eraserPoint,points[i],points[i+1]);
-        if(dist <= ERASER_RADIUS) return true;
+        if(dist <= HIT_RADIUS) return true;
     }
     return false;
 }
@@ -55,7 +55,7 @@ function hitPencil(x,y,drawing){
 //Line
 function hitLine(x,y,drawing){
     const dist = shortestDistanceBetweenPointAndLineSegment({x,y},{x:drawing.x,y:drawing.y},{x:drawing.x2,y:drawing.y2});
-    return dist <= ERASER_RADIUS;
+    return dist <= HIT_RADIUS;
 }
 
 //Ellipse
@@ -70,7 +70,7 @@ function hitEllipse(x,y,drawing){
         ((x - drawing.x) ** 2) / (radiusX ** 2) +
         ((y - drawing.y) ** 2) / (radiusY ** 2);
 
-    const tolerance = ERASER_RADIUS / Math.min(radiusX, radiusY);
+    const tolerance = HIT_RADIUS / Math.min(radiusX, radiusY);
     return Math.abs(dist - 1) <= tolerance;
 }
 
@@ -102,6 +102,43 @@ function segmentHitsDrawing(p1, p2, drawing) {
     return false;
 }
 
+function getBoundingBox(drawing){
+    switch (drawing.type) {
+        case "line":
+            return {
+                x1: Math.min(drawing.x, drawing.x2),
+                y1: Math.min(drawing.y, drawing.y2),
+                x2: Math.max(drawing.x, drawing.x2),
+                y2: Math.max(drawing.y, drawing.y2),
+            };
+        case "freedraw": {
+            const xs = drawing.points.map(p => drawing.x + p.x);
+            const ys = drawing.points.map(p => drawing.y + p.y);
+            return {
+                x1: Math.min(...xs),
+                y1: Math.min(...ys),
+                x2: Math.max(...xs),
+                y2: Math.max(...ys),
+            };
+        }
+        case "ellipse": {
+            return {
+                x1: drawing.x - drawing.width / 2,
+                y1: drawing.y - drawing.height / 2,
+                x2: drawing.x + drawing.width / 2,
+                y2: drawing.y + drawing.height / 2,
+            };
+        }
+        default: // rectangle, text
+            return {
+                x1: Math.min(drawing.x, drawing.x + drawing.width),
+                y1: Math.min(drawing.y, drawing.y + drawing.height),
+                x2: Math.max(drawing.x, drawing.x + drawing.width),
+                y2: Math.max(drawing.y, drawing.y + drawing.height),
+            };
+    }
+}
+
 export {
     hitBox,
     hitPencil,
@@ -109,4 +146,5 @@ export {
     hitEllipse,
     pointsHitDrawing,
     segmentHitsDrawing,
+    getBoundingBox,
 };

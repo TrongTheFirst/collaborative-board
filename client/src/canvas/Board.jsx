@@ -21,6 +21,7 @@ import { createLineTool, drawLineElement } from "./tools/Line.js"
 import { createEraserTool } from "./tools/Eraser.js";
 import { createHandTool } from "./tools/Hand.js";
 import { createSelectorTool } from "./tools/Selector.js";
+import { handleCopy, handlePaste } from "./tools/CopyPaste.js";
 
 function Board(){
     const [openCollabStartModal, setOpenCollabStartModal] = useState(false);
@@ -50,6 +51,8 @@ function Board(){
     const activeToolRef = useRef(activeTool);
     const viewportTransform = useRef({x: 0, y: 0, scale: 1});
     const zoomActions = useRef({});
+    const selectedElement = useRef(null);
+    const lastPointerPosition = useRef({ x: 0, y: 0 });
 
 
     function clearCanvas(){
@@ -184,12 +187,12 @@ function Board(){
         const line = createLineTool(previewRc, previewCanvas);
         const eraser = createEraserTool(previewRc, previewCanvas, drawingsCopyRef.current, () => setDrawingsCopy([...drawingsCopyRef.current]));
         const hand = createHandTool(pan);
-        const select = createSelectorTool(canvas, drawingsCopyRef.current, (movedElement) => {
+        const select = createSelectorTool(previewRc, previewCanvas, canvas, drawingsCopyRef.current, (movedElement) => {
             drawingsCopyRef.current = drawingsCopyRef.current.map((d) =>
                 d.clientId === movedElement.clientId ? movedElement : d
             );
             setDrawingsCopy([...drawingsCopyRef.current]);
-        });
+        }, selection=>{selectedElement.current = selection});
         const tools = { pencil, rectangle, ellipse, line, text, eraser, hand, select };
         let getActiveTool = () => tools[activeToolRef.current] ?? pencil;
 
@@ -225,8 +228,9 @@ function Board(){
         };
 
         const handlePointerMove = (e) => {
-            const offset = activeToolRef.current === "hand" ? e : toOffset(e);
-            getActiveTool().onPointerMove(offset);
+            const offset = toOffset(e);
+            getActiveTool().onPointerMove(activeToolRef.current === "hand" ? e : offset);
+            lastPointerPosition.current = {x: offset.clientX, y: offset.clientY};
         };
 
         const handlePointerUp = (e) => {
@@ -325,6 +329,20 @@ function Board(){
         const handlePointerLeave = () => {
             canvas.style.cursor = "default";
         };
+        const isTypingTarget = (target) =>{
+            return target?.tagName === "INPUT" || target?.tagName === "TEXTAREA";
+        }
+        function copy(e){
+            if (isTypingTarget(document.activeElement)) return;
+            handleCopy(selectedElement, e)
+        }
+        function paste(e){
+            if (isTypingTarget(document.activeElement)) return;
+            e.clientX = lastPointerPosition.current.x;
+            e.clientY = lastPointerPosition.current.y;
+            handlePaste(e, boardId, inSession, sendDrawing, addDrawing, setBoardDrawings, drawingsCountRef);
+        }
+
 
         canvas.addEventListener("pointerleave", handlePointerLeave);
         canvas.addEventListener("pointerdown", handlePointerDown);
@@ -332,9 +350,12 @@ function Board(){
         canvas.addEventListener("pointerup", handlePointerUp);
         canvas.addEventListener("wheel", handleWheel, { passive: false });
         window.addEventListener("resize", resize);
-
+        window.addEventListener("copy", copy);
+        window.addEventListener("paste", paste);
         return () => {
             window.removeEventListener("resize", resize);
+            window.removeEventListener("copy", copy);
+            window.removeEventListener("paste", paste);
             canvas.removeEventListener("pointerdown", handlePointerDown);
             canvas.removeEventListener("pointermove", handlePointerMove);
             canvas.removeEventListener("pointerup", handlePointerUp);
