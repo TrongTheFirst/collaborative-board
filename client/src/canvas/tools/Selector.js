@@ -3,7 +3,7 @@ import {
     getBoundingBox
 } from "./HitDetection";
 
-export function createSelectorTool(previewRc, previewCanvas, canvas, drawings, onMove, onSelect){
+export function createSelectorTool(previewRc, previewCanvas, canvas, drawingsRef, onMove, onSelect){
     let isDragging = false;
     let dragStart = { x: 0, y: 0 };
     let selectedElement = null;
@@ -14,6 +14,7 @@ export function createSelectorTool(previewRc, previewCanvas, canvas, drawings, o
     }
 
     function findElementAt(x, y){
+        const drawings = drawingsRef.current;
         for(let i = drawings.length - 1; i >= 0; i--){
             const drawing = drawings[i];
             if(pointsHitDrawing(x, y, drawing)){
@@ -67,6 +68,7 @@ export function createSelectorTool(previewRc, previewCanvas, canvas, drawings, o
     }
 
     function onPointerMove(e){
+
         const hovering = findElementAt(e.clientX, e.clientY);
         canvas.style.cursor = hovering || isDragging ? "move" : "default";
 

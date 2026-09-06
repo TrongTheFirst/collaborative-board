@@ -185,6 +185,7 @@ export function SessionProvider({children}) {
                 onErase(payload);
             }else if(type === "update"){
                 const drawing = { type: payload.type, ...payload.elementData };
+                onUpdate(drawing);
             }
         });
 

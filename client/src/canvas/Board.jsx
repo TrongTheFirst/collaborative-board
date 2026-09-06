@@ -187,7 +187,7 @@ function Board(){
         const line = createLineTool(previewRc, previewCanvas);
         const eraser = createEraserTool(previewRc, previewCanvas, drawingsCopyRef.current, () => setDrawingsCopy([...drawingsCopyRef.current]));
         const hand = createHandTool(pan);
-        const select = createSelectorTool(previewRc, previewCanvas, canvas, drawingsCopyRef.current, (movedElement) => {
+        const select = createSelectorTool(previewRc, previewCanvas, canvas, drawingsCopyRef, (movedElement) => {
             drawingsCopyRef.current = drawingsCopyRef.current.map((d) =>
                 d.clientId === movedElement.clientId ? movedElement : d
             );
@@ -343,12 +343,26 @@ function Board(){
             handlePaste(e, boardId, inSession, sendDrawing, addDrawing, setBoardDrawings, drawingsCountRef);
         }
 
+        function handleHotKeys(e){
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            if(isTypingTarget(e.target)) return;
+            
+            if(e.key === "h"){
+                setActiveTool("hand");
+            }else if(e.key === "f"){
+                setActiveTool("select");
+            }else if(e.key === "e"){
+                setActiveTool("eraser");
+            }
+        }
+
 
         canvas.addEventListener("pointerleave", handlePointerLeave);
         canvas.addEventListener("pointerdown", handlePointerDown);
         canvas.addEventListener("pointermove", handlePointerMove);
         canvas.addEventListener("pointerup", handlePointerUp);
         canvas.addEventListener("wheel", handleWheel, { passive: false });
+        window.addEventListener("keydown", handleHotKeys);
         window.addEventListener("resize", resize);
         window.addEventListener("copy", copy);
         window.addEventListener("paste", paste);
