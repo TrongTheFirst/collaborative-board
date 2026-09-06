@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation} from "react-router-dom";
 import rough from "roughjs/bin/rough";
 import Toolbar from "./Toolbar.jsx";
 import OptionsBar from "./OptionsBar.jsx";
+import ZoomBar from "./ZoomBar.jsx";
 import Customization from "./Customization.jsx";
 import { useSession} from "../contexts/SessionContext.jsx";
 import {useBoard}  from "../contexts/BoardContext.jsx";
@@ -28,6 +29,7 @@ function Board(){
     const [activeTool, setActiveTool] = useState("pencil");
     const [textInput, setTextInput] = useState(null);
     const [errors, setErrors] = useState(null);
+    const [zoomPercent, setZoomPercent] = useState(100);
 
     const { showNotif } = useNotif();
     const {sendDrawing, sendErase, inSession, connectToRoom, isHost, viewMode} = useSession();
@@ -45,12 +47,12 @@ function Board(){
     const drawingsCountRef = useRef(0);
     const textAreaRef = useRef(null);
     const activeToolRef = useRef(activeTool);
-    const panOffsetRef = useRef({x: 0, y: 0});
+    const viewportTransform = useRef({x: 0, y: 0, scale: 1});
+    const zoomActions = useRef({});
 
 
     function clearCanvas(){
         const ctx = canvasRef.current.getContext("2d");
-        ctx.clearRect(0,0,canvasRef.current.width, canvasRef.current.height);
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
@@ -110,9 +112,11 @@ function Board(){
     }
 
     function applyTransform(ctx){
-        ctx.setTransform(1, 0, 0, 1, panOffsetRef.current.x, panOffsetRef.current.y);
+        const transform = viewportTransform.current;
+        ctx.setTransform(transform.scale, 0, 0, transform.scale, transform.x, transform.y);
     }
 
+    //load drawings
     useEffect(() => {
         drawingsRef.current = drawings;
         drawingsCopyRef.current = drawings.map(d => ({...d, beingErase:false}));
@@ -137,15 +141,15 @@ function Board(){
         }
 
     }, [drawings, drawingsLoaded]);
-
+    //set copy of drawing for erasing preview
     useEffect(() => {
         if (!canvasRef.current || !pageInitializedRef.current) return;
         clearCanvas();
         drawBoard(drawingsCopy);
     }, [drawingsCopy]);
-
+    //get current tool
     useEffect(() => {activeToolRef.current = activeTool;}, [activeTool]);
-
+    //text tool textarea update
     useEffect(() => {
         if (textInput && textAreaRef.current) {
             textAreaRef.current.focus();
@@ -160,22 +164,25 @@ function Board(){
         const previewCanvas = previewCanvasRef.current;
         const previewRc = rough.canvas(previewCanvas);
 
-        const pencil = createPencilTool(previewRc, previewCanvas, panOffsetRef);
-        const text = createTextTool(previewRc, previewCanvas, setTextInput);
-        const rectangle = createRectangleTool(previewRc, previewCanvas);
-        const ellipse = createEllipseTool(previewRc, previewCanvas);
-        const line = createLineTool(previewRc, previewCanvas);
-        const eraser = createEraserTool(previewRc, previewCanvas, drawingsCopyRef.current, () => setDrawingsCopy([...drawingsCopyRef.current]));
-        const hand = createHandTool( (dx,dy)=>{
-            panOffsetRef.current = {
-                x: panOffsetRef.current.x + dx,
-                y: panOffsetRef.current.y + dy
+        const pan = (dx,dy)=>{
+            viewportTransform.current = {
+                x: viewportTransform.current.x + dx,
+                y: viewportTransform.current.y + dy,
+                scale: viewportTransform.current.scale,
             }
             applyTransform(ctx);
             applyTransform(previewRc.ctx);
             clearCanvas();
             drawBoard(drawingsRef.current);
-        }, panOffsetRef);
+        }
+
+        const pencil = createPencilTool(previewRc, previewCanvas, viewportTransform);
+        const text = createTextTool(previewRc, previewCanvas, setTextInput);
+        const rectangle = createRectangleTool(previewRc, previewCanvas);
+        const ellipse = createEllipseTool(previewRc, previewCanvas);
+        const line = createLineTool(previewRc, previewCanvas);
+        const eraser = createEraserTool(previewRc, previewCanvas, drawingsCopyRef.current, () => setDrawingsCopy([...drawingsCopyRef.current]));
+        const hand = createHandTool(pan);
         const tools = { pencil, rectangle, ellipse, line, text, eraser, hand};
         let getActiveTool = () => tools[activeToolRef.current] ?? pencil;
 
@@ -196,9 +203,10 @@ function Board(){
         resize();
 
         const toOffset = (e) => {
+            const { x, y, scale } = viewportTransform.current;
             return {
-                clientX: e.clientX - panOffsetRef.current.x,
-                clientY: e.clientY - panOffsetRef.current.y,
+                clientX: (e.clientX - x) / scale,
+                clientY: (e.clientY - y) / scale,
                 pointerId: e.pointerId,
             };
         }
@@ -251,9 +259,62 @@ function Board(){
             }
         };
 
+        function applyZoom(newScale, anchorX, anchorY){
+            const { x: oldX, y: oldY, scale: oldScale } = viewportTransform.current;
+            const clampedScale = Math.min(Math.max(newScale, 0.1), 20);
+
+            const newX = anchorX - (anchorX - oldX) * (clampedScale / oldScale);
+            const newY = anchorY - (anchorY - oldY) * (clampedScale / oldScale);
+
+            viewportTransform.current = {
+                x: newX,
+                y: newY,
+                scale: clampedScale,
+            };
+
+            applyTransform(ctx);
+            applyTransform(previewRc.ctx);
+            clearCanvas();
+            drawBoard(drawingsRef.current);
+            setZoomPercent(Math.round(clampedScale * 100));
+        }
+
+        function zoomWithWheel(e){
+            const { scale } = viewportTransform.current;
+            const newScale = scale * Math.exp(-e.deltaY * 0.001);
+            applyZoom(newScale, e.clientX, e.clientY);
+        }
+
+        function zoomIn(){
+            const { scale } = viewportTransform.current;
+            applyZoom(scale * 1.2, window.innerWidth / 2, window.innerHeight / 2);
+        }
+
+        function zoomOut(){
+            const { scale } = viewportTransform.current;
+            applyZoom(scale / 1.2, window.innerWidth / 2, window.innerHeight / 2);
+        }
+
+        function resetZoom(){
+            applyZoom(1, window.innerWidth / 2, window.innerHeight / 2);
+        }
+        
+        zoomActions.current = { zoomIn, zoomOut, resetZoom };
+
+        function handleWheel(e){
+            e.preventDefault();
+            if(e.ctrlKey){
+                zoomWithWheel(e);
+            }else{
+                pan(-e.deltaX, -e.deltaY);
+            }
+
+        }
+
         canvas.addEventListener("pointerdown", handlePointerDown);
         canvas.addEventListener("pointermove", handlePointerMove);
         canvas.addEventListener("pointerup", handlePointerUp);
+        canvas.addEventListener("wheel", handleWheel, { passive: false });
         window.addEventListener("resize", resize);
 
         return () => {
@@ -261,6 +322,7 @@ function Board(){
             canvas.removeEventListener("pointerdown", handlePointerDown);
             canvas.removeEventListener("pointermove", handlePointerMove);
             canvas.removeEventListener("pointerup", handlePointerUp);
+            canvas.removeEventListener("wheel", handleWheel);
         };
     }, [boardId, drawings, viewMode]);
 
@@ -317,8 +379,8 @@ function Board(){
                     onInput={handleTextAreaInput}
                     style={{
                         position: "fixed",
-                        left: textInput.x + panOffsetRef.current.x + 3,
-                        top: textInput.y + panOffsetRef.current.y,
+                        left: textInput.x * viewportTransform.current.scale + viewportTransform.current.x + 3,
+                        top: textInput.y * viewportTransform.current.scale + viewportTransform.current.y,
                         width: textInput.width,
                         height: textInput.height,
                         font: `${TEXT_STYLE.fontWeight} ${TEXT_STYLE.fontSize} ${TEXT_STYLE.fontStyle}`,
@@ -331,6 +393,11 @@ function Board(){
             {openCollabEndModal && <CollabEndModal setOpenCollabEndModal={setOpenCollabEndModal}/>}
             {openLoginModal && <LoginModal setOpenLoginModal={setOpenLoginModal} setOpenCreateModal={setOpenCreateModal}/>}
             {openCreateModal && <CreateModal setOpenLoginModal={setOpenLoginModal} setOpenCreateModal={setOpenCreateModal}/>}
+            <ZoomBar zoomPercent={zoomPercent} zoom={{
+                zoomIn: () => zoomActions.current.zoomIn(),
+                zoomOut: () => zoomActions.current.zoomOut(),
+                resetZoom: () => zoomActions.current.resetZoom(),
+            }} />
         </>
     );
 }
