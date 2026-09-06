@@ -43,7 +43,8 @@ export function BoardProvider({ children }) {
                     clearBoard();
                 }
             };
-            connectToRoom(roomCode, displayName, onReply, setBoardDrawings, removeDrawingByClientId, onRoomEnd);
+            connectToRoom(roomCode, displayName,
+                {onReply, onNewDrawing:setBoardDrawings, onErase:removeDrawingByClientId, onUpdate:updateBoardDrawings ,onRoomEnd});
         }
     },[roomCode])
 
@@ -166,10 +167,15 @@ export function BoardProvider({ children }) {
         }
     }
     async function addDrawing(boardElement){
+        const headers = {"Content-Type": "application/json"};
+        const token = localStorage.getItem("token");
+        if(token){
+            headers.Authorization = `Bearer ${token}`;
+        }
         try{
             const response = await fetch(BASE_URL+`/element/add`,{
                 method:"POST",
-                headers: {"Content-Type": "application/json"},
+                headers,
                 body: JSON.stringify(boardElement)
             });
             if (!response.ok) {
@@ -178,6 +184,26 @@ export function BoardProvider({ children }) {
         }catch(error){
             showNotif("Failed to save drawing");
             console.error("Failed to add drawing", error);
+        }
+    }
+    async function updateDrawing(boardElement){
+        const headers = {"Content-Type": "application/json"};
+        const token = localStorage.getItem("token");
+        if(token){
+            headers.Authorization = `Bearer ${token}`;
+        }
+        try{
+            const response = await fetch(BASE_URL+`/element/update`,{
+                method:"PUT",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(boardElement)
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to update drawing: ${response.status}`);
+            }
+        }catch(error){
+            showNotif("Failed to update drawing");
+            console.error("Failed to update drawing", error);
         }
     }
     async function deleteDrawingByClientId(clientId){
@@ -221,6 +247,13 @@ export function BoardProvider({ children }) {
             localStorage.setItem("drawings",JSON.stringify(newDrawings));
             return newDrawings;
         });
+    }
+    function updateBoardDrawings(drawing){
+        setDrawings((prevState) => {
+            const newDrawings = prevState.map(d => d.clientId === drawing.clientId ? drawing : d);
+            localStorage.setItem("drawings",JSON.stringify(newDrawings));
+            return newDrawings;
+        })
     }
     function removeDrawingByClientId(clientId){
         setDrawings((prevState) => {
@@ -305,7 +338,9 @@ export function BoardProvider({ children }) {
                 drawingsLoaded,
                 setBoardState,
                 setBoardDrawings,
+                updateBoardDrawings,
                 addDrawing,
+                updateDrawing,
                 clearDrawings,
                 deleteAllBoardElements,
                 deleteDrawingByClientId,

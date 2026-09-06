@@ -127,7 +127,7 @@ function Customization({currTool}){
                 </div>
                 {currTool!=="text" &&
                     <>
-                        <div className="px-4 py-3">
+                        <div className="px-4 py-3"> {/*stroke width*/}
                             <span className="text-[13px] font-medium text-gray-600">
                                 Stroke width
                             </span>
@@ -152,7 +152,7 @@ function Customization({currTool}){
                                 ))}
                             </div>
                         </div>
-                        {currTool!=="pencil" && <div className="px-4 py-3">
+                        {currTool!=="pencil" && <div className="px-4 py-3"> {/*stroke style*/}
                             <span className="text-[13px] font-medium text-gray-600">
                                 Stroke style
                             </span>
@@ -230,6 +230,7 @@ function Customization({currTool}){
                                         aria-label={font.label}
                                         aria-pressed={selectedFont === font.value}
                                         onClick={() => setSelectedFont(font.value)}
+                                        onMouseDown={(e) => e.preventDefault()}
                                         className={`w-9 h-7 flex items-center justify-center rounded-md transition-colors cursor-pointer ${
                                             selectedFont === font.value
                                                 ? "bg-indigo-100"

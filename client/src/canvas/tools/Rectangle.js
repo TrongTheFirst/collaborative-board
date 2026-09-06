@@ -81,5 +81,5 @@ export function createRectangleTool(previewRc, previewCanvas){
         }
     }
 
-    return { onPointerDown, onPointerMove, onPointerUp };
+    return { onPointerDown, onPointerMove, onPointerUp, drawPreview };
 }

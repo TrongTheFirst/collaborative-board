@@ -57,6 +57,39 @@ public class BoardElementService {
         }
         return result;
     }
+
+    public Result<BoardElement> updateByClientId(BoardElement boardElement) throws DataAccessException {
+        Result<BoardElement> result = new Result<>();
+
+        JsonNode elementData = boardElement.getElementData();
+        long boardId = boardElement.getBoardId();
+        String type = boardElement.getType();
+
+        if(elementData == null){
+            result.addErrorMessage("Board element data cannot be null", ResultType.INVALID);
+            return result;
+        }
+        if(!elementData.has("x") || !elementData.has("y")){
+            result.addErrorMessage("Element data does not have a position", ResultType.INVALID);
+            return result;
+        }
+        if(!elementData.has("clientId")){
+            result.addErrorMessage("Element data does not have a clientId", ResultType.INVALID);
+            return result;
+        }
+        if(boardRepository.findById(boardId) == null){
+            result.addErrorMessage("Board %s was not found", ResultType.NOT_FOUND, boardId);
+            return result;
+        }
+        if(!repository.updateByClientId(boardId, elementData)){
+            result.addErrorMessage("Board element was not found", ResultType.NOT_FOUND, elementData.get("clientId").asString());
+            return result;
+        }
+        //elementId does not matter. client discards elementId
+        result.setPayload(new BoardElement(0, boardId, type, elementData));
+        return result;
+    }
+
     public Result<BoardElement> delete(long id) throws DataAccessException {
         Result<BoardElement> result = new Result<>();
         if(!repository.delete(id)){

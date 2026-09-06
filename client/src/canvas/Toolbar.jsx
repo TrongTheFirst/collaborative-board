@@ -4,7 +4,7 @@ import { useSession } from "../contexts/SessionContext.jsx";
 function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeTool, setActiveTool }) {
     const tools = [
         { icon: Hand, label: "Hand", tool: "hand" },
-        { icon: MousePointer2, label: "Pointer", tool: "pointer" },
+        { icon: MousePointer2, label: "Select", tool: "select" },
         { icon: Square, label: "Rectangle", tool: "rectangle" },
         { icon: Circle, label: "Ellipse", tool: "ellipse" },
         { icon: Minus, label: "Line", tool: "line" },

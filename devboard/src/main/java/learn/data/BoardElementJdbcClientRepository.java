@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
@@ -54,6 +55,21 @@ public class BoardElementJdbcClientRepository implements BoardElementRepository 
         boardElement.setElementId(keyHolder.getKey().longValue());
 
         return boardElement;
+    }
+
+    @Override
+    public boolean updateByClientId(long boardId, JsonNode elementData) throws DataAccessException{
+        final String sql = """
+                update board_element
+                set board_id = :board_id, element_data = :element_data
+                where element_data->>'$.clientId' = :client_id;
+        """;
+
+        return jdbcClient.sql(sql)
+                .param("board_id", boardId)
+                .param("element_data", elementData.toString())
+                .param("client_id", elementData.get("clientId").asString())
+                .update() > 0;
     }
 
     @Override

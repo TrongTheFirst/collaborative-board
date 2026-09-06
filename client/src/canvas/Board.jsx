@@ -20,6 +20,7 @@ import { createEllipseTool, drawEllipseElement } from "./tools/Ellipse.js";
 import { createLineTool, drawLineElement } from "./tools/Line.js"
 import { createEraserTool } from "./tools/Eraser.js";
 import { createHandTool } from "./tools/Hand.js";
+import { createSelectorTool } from "./tools/Selector.js";
 
 function Board(){
     const [openCollabStartModal, setOpenCollabStartModal] = useState(false);
@@ -32,10 +33,10 @@ function Board(){
     const [zoomPercent, setZoomPercent] = useState(100);
 
     const { showNotif } = useNotif();
-    const {sendDrawing, sendErase, inSession, connectToRoom, isHost, viewMode} = useSession();
-    const {drawings, addDrawing, clearDrawings,
+    const {sendDrawing, sendUpdate, sendErase, inSession, connectToRoom, isHost, viewMode} = useSession();
+    const {drawings, addDrawing, updateDrawing, clearDrawings,
         deleteAllBoardElements, deleteDrawingByClientId, removeDrawingByClientId,
-        setBoardDrawings, drawingsLoaded, boardId} = useBoard();
+        setBoardDrawings, updateBoardDrawings, drawingsLoaded, boardId} = useBoard();
 
     const canvasRef = useRef(null);
     const previewCanvasRef = useRef(null);
@@ -183,7 +184,13 @@ function Board(){
         const line = createLineTool(previewRc, previewCanvas);
         const eraser = createEraserTool(previewRc, previewCanvas, drawingsCopyRef.current, () => setDrawingsCopy([...drawingsCopyRef.current]));
         const hand = createHandTool(pan);
-        const tools = { pencil, rectangle, ellipse, line, text, eraser, hand};
+        const select = createSelectorTool(canvas, drawingsCopyRef.current, (movedElement) => {
+            drawingsCopyRef.current = drawingsCopyRef.current.map((d) =>
+                d.clientId === movedElement.clientId ? movedElement : d
+            );
+            setDrawingsCopy([...drawingsCopyRef.current]);
+        });
+        const tools = { pencil, rectangle, ellipse, line, text, eraser, hand, select };
         let getActiveTool = () => tools[activeToolRef.current] ?? pencil;
 
         if(viewMode && !isHost()){
@@ -250,12 +257,22 @@ function Board(){
                 type,
                 elementData
             };
-            if(inSession()){
-                sendDrawing(boardElement);
+
+            if(activeToolRef.current === "select") {
+                if(inSession()){
+                    sendUpdate(boardElement);
+                }else{
+                    updateDrawing(boardElement);
+                    updateBoardDrawings(drawing);
+                }
             }else{
-                addDrawing(boardElement);
-                drawingsCountRef.current += 1;
-                setBoardDrawings(drawing);
+                if(inSession()){
+                    sendDrawing(boardElement);
+                }else{
+                    addDrawing(boardElement);
+                    drawingsCountRef.current += 1;
+                    setBoardDrawings(drawing);
+                }
             }
         };
 
@@ -278,27 +295,22 @@ function Board(){
             drawBoard(drawingsRef.current);
             setZoomPercent(Math.round(clampedScale * 100));
         }
-
         function zoomWithWheel(e){
             const { scale } = viewportTransform.current;
             const newScale = scale * Math.exp(-e.deltaY * 0.001);
             applyZoom(newScale, e.clientX, e.clientY);
         }
-
         function zoomIn(){
             const { scale } = viewportTransform.current;
             applyZoom(scale * 1.2, window.innerWidth / 2, window.innerHeight / 2);
         }
-
         function zoomOut(){
             const { scale } = viewportTransform.current;
             applyZoom(scale / 1.2, window.innerWidth / 2, window.innerHeight / 2);
         }
-
         function resetZoom(){
             applyZoom(1, window.innerWidth / 2, window.innerHeight / 2);
         }
-        
         zoomActions.current = { zoomIn, zoomOut, resetZoom };
 
         function handleWheel(e){
@@ -310,7 +322,11 @@ function Board(){
             }
 
         }
+        const handlePointerLeave = () => {
+            canvas.style.cursor = "default";
+        };
 
+        canvas.addEventListener("pointerleave", handlePointerLeave);
         canvas.addEventListener("pointerdown", handlePointerDown);
         canvas.addEventListener("pointermove", handlePointerMove);
         canvas.addEventListener("pointerup", handlePointerUp);
@@ -323,6 +339,7 @@ function Board(){
             canvas.removeEventListener("pointermove", handlePointerMove);
             canvas.removeEventListener("pointerup", handlePointerUp);
             canvas.removeEventListener("wheel", handleWheel);
+            canvas.removeEventListener("pointerleave", handlePointerLeave);
         };
     }, [boardId, drawings, viewMode]);
 

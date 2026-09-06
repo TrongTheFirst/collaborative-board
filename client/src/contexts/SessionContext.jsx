@@ -77,7 +77,7 @@ export function SessionProvider({children}) {
 
 
 
-    function connectToRoom(newRoomCode, displayName, onReply, onNewDrawing, onErase, onRoomEnd){
+    function connectToRoom(newRoomCode, displayName, subReq){
         console.log("Calling connectToRoom...")
         if (!stompClient.current) {
             console.log("Stomp client null. Leaving connectToRoom...")
@@ -108,7 +108,7 @@ export function SessionProvider({children}) {
                     setCollaborators(members);
                     elements = elements.map(element => ({ type: element.type, ...element.elementData }));
                     onReply(boardId, elements);
-                    subscribeToRoom(newRoomCode, onNewDrawing, onErase, onRoomEnd);
+                    subscribeToRoom(newRoomCode, subReq.onNewDrawing, subReq.onErase, subReq.onUpdate, subReq.onRoomEnd)
                 }
                 replySub.unsubscribe();
             });
@@ -145,7 +145,7 @@ export function SessionProvider({children}) {
                     host.current = true;
                     sessionDisplayName.current = member.displayName;
                     setCollaborators((prev)=>[...prev, member]);
-                    subscribeToRoom(member.roomCode, subReq.onNewDrawing, subReq.onErase, subReq.onRoomEnd)
+                    subscribeToRoom(member.roomCode, subReq.onNewDrawing, subReq.onErase, subReq.onUpdate, subReq.onRoomEnd)
                     navigate(`/room/${member.roomCode}`);
                 }
                 replySub.unsubscribe();
@@ -162,7 +162,7 @@ export function SessionProvider({children}) {
         delayOnConnectDo(sendCreateRequest);
     }
 
-    function subscribeToRoom(newRoomCode, onNewDrawing, onErase, onRoomEnd){
+    function subscribeToRoom(newRoomCode, onNewDrawing, onErase, onUpdate, onRoomEnd){
         unsubscribe();
         roomCode.current = newRoomCode;
         const replyTopic = `/topic/room/${newRoomCode}`;
@@ -177,6 +177,8 @@ export function SessionProvider({children}) {
                 onNewDrawing(drawing);
             }else if(type === "erase"){
                 onErase(payload);
+            }else if(type === "update"){
+                const drawing = { type: payload.type, ...payload.elementData };
             }
         });
 
@@ -254,6 +256,10 @@ export function SessionProvider({children}) {
     }
 
     function sendMessage(destination, message){
+        if (!stompClient.current?.connected) {
+            showNotif("No connection to server");
+            return;
+        }
         stompClient.current.publish({
             destination,
             body: JSON.stringify(message)
@@ -264,7 +270,13 @@ export function SessionProvider({children}) {
         if(viewMode && !host.current){
             return;
         }
-        sendMessage(`/app/room/${roomCode.current}`, {sender:clientId.current, element:boardElement});
+        sendMessage(`/app/room/${roomCode.current}/add`, {sender:clientId.current, element:boardElement});
+    }
+    function sendUpdate(boardElement){
+        if(viewMode && !host.current){
+            return;
+        }
+        sendMessage(`/app/room/${roomCode.current}/update`, {sender:clientId.current, element:boardElement});
     }
     function sendErase(boardId, elementClientId){
         if(viewMode && !host.current){
@@ -357,6 +369,7 @@ export function SessionProvider({children}) {
             disconnectFromRoom,
             sendDrawing,
             sendErase,
+            sendUpdate,
             createRoom,
             viewMode,
             sendRuleToggle,
