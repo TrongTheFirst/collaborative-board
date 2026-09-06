@@ -346,7 +346,7 @@ function Board(){
         function handleHotKeys(e){
             if (e.ctrlKey || e.metaKey || e.altKey) return;
             if(isTypingTarget(e.target)) return;
-            
+
             if(e.key === "h"){
                 setActiveTool("hand");
             }else if(e.key === "f"){
@@ -433,12 +433,14 @@ function Board(){
                         position: "fixed",
                         left: textInput.x * viewportTransform.current.scale + viewportTransform.current.x + 3,
                         top: textInput.y * viewportTransform.current.scale + viewportTransform.current.y,
-                        width: textInput.width,
-                        height: textInput.height,
-                        font: `${TEXT_STYLE.fontWeight} ${TEXT_STYLE.fontSize} ${TEXT_STYLE.fontStyle}`,
+                        width: textInput.width * viewportTransform.current.scale,
+                        height: textInput.height * viewportTransform.current.scale,
+                        font: `${TEXT_STYLE.fontWeight} ${(TEXT_STYLE.fontSize)} ${TEXT_STYLE.fontStyle}`,
+                        color: TEXT_STYLE.fillStyle,
                         padding: "5px",
                         outline: "none",
                     }}
+                    className="border border-black"
                 />
             )}
             {openCollabStartModal && <CollabStartModal setOpenCollabStartModal={setOpenCollabStartModal} setOpenCollabEndModal={setOpenCollabEndModal}/>}

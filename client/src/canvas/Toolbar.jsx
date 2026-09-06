@@ -3,14 +3,14 @@ import { useSession } from "../contexts/SessionContext.jsx";
 
 function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeTool, setActiveTool }) {
     const tools = [
-        { icon: Hand, label: "Hand", tool: "hand" },
-        { icon: MousePointer2, label: "Select", tool: "select" },
-        { icon: Square, label: "Rectangle", tool: "rectangle" },
-        { icon: Circle, label: "Ellipse", tool: "ellipse" },
-        { icon: Minus, label: "Line", tool: "line" },
-        { icon: Pencil, label: "Pencil", tool: "pencil" },
-        { icon: Type, label: "Text", tool: "text" },
-        { icon: Eraser, label: "Erase", tool: "eraser" },
+        { icon: Hand, label: "Hand", tool: "hand", hotkey: " - H"},
+        { icon: MousePointer2, label: "Select", tool: "select", hotkey: " - S" },
+        { icon: Square, label: "Rectangle", tool: "rectangle", hotkey: "" },
+        { icon: Circle, label: "Ellipse", tool: "ellipse", hotkey: "" },
+        { icon: Minus, label: "Line", tool: "line", hotkey: "" },
+        { icon: Pencil, label: "Pencil", tool: "pencil", hotkey: "" },
+        { icon: Type, label: "Text", tool: "text", hotkey: "" },
+        { icon: Eraser, label: "Erase", tool: "eraser", hotkey: " - E" },
     ];
     const { viewMode, isHost, inSession} = useSession();
 
@@ -25,11 +25,11 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
         <div className="fixed inset-0 z-50 pointer-events-none">
             <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-auto">
                 <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 shadow-sm px-2 py-2 ">
-                    {tools.slice(0, 2).map(({ icon: Icon, label, tool }) => (
+                    {tools.slice(0, 2).map(({ icon: Icon, label, tool, hotkey }) => (
                         <button
                             key={label}
                             aria-label={label}
-                            title={label}
+                            title={label + hotkey}
                             disabled={viewMode && !isHost()}
                             onClick={tool ? () => setActiveTool(tool) : undefined}
                             className={toolButtonClasses(tool)}
@@ -41,11 +41,11 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
 
                     <div className="w-px h-6 bg-gray-200 mx-1" />
 
-                    {tools.slice(2,8).map(({ icon: Icon, label, tool }) => (
+                    {tools.slice(2,8).map(({ icon: Icon, label, tool, hotkey }) => (
                         <button
                             key={label}
                             aria-label={label}
-                            title={label}
+                            title={label + hotkey}
                             disabled={viewMode && !isHost()}
                             onClick={tool ? () => setActiveTool(tool) : undefined}
                             className={toolButtonClasses(tool)}
@@ -54,11 +54,11 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                         </button>
                     ))}
                     <div className="w-px h-6 bg-gray-200 mx-1" />
-                    {tools.slice(8,9).map(({ icon: Icon, label, tool }) => (
+                    {tools.slice(8,9).map(({ icon: Icon, label, tool, hotkey}) => (
                         <button
                             key={label}
                             aria-label={label}
-                            title={label}
+                            title={label + hotkey}
                             disabled={viewMode && !isHost()}
                             onClick={tool ? () => setActiveTool(tool) : undefined}
                             className={toolButtonClasses(tool)}
