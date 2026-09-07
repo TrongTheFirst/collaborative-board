@@ -3,13 +3,13 @@ import { useSession } from "../contexts/SessionContext.jsx";
 
 function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeTool, setActiveTool }) {
     const tools = [
-        { icon: Hand, label: "Hand", tool: "hand", hotkey: " - H"},
-        { icon: MousePointer2, label: "Select", tool: "select", hotkey: " - S" },
-        { icon: Square, label: "Rectangle", tool: "rectangle", hotkey: "" },
-        { icon: Circle, label: "Ellipse", tool: "ellipse", hotkey: "" },
-        { icon: Minus, label: "Line", tool: "line", hotkey: "" },
-        { icon: Pencil, label: "Pencil", tool: "pencil", hotkey: "" },
-        { icon: Type, label: "Text", tool: "text", hotkey: "" },
+        { icon: Hand, label: "Hand", tool: "hand", hotkey: " - H, 1"},
+        { icon: MousePointer2, label: "Select", tool: "select", hotkey: " - S, 2" },
+        { icon: Square, label: "Rectangle", tool: "rectangle", hotkey: " - R" },
+        { icon: Circle, label: "Ellipse", tool: "ellipse", hotkey: " - D" },
+        { icon: Minus, label: "Line", tool: "line", hotkey: " - W" },
+        { icon: Pencil, label: "Pencil", tool: "pencil", hotkey: " - A" },
+        { icon: Type, label: "Text", tool: "text", hotkey: " - T" },
         { icon: Eraser, label: "Erase", tool: "eraser", hotkey: " - E" },
     ];
     const { viewMode, isHost, inSession} = useSession();

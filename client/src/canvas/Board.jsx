@@ -370,15 +370,30 @@ function Board(){
 
 
         function handleHotKeys(e){
-            if (e.ctrlKey || e.metaKey || e.altKey) return;
             if(isTypingTarget(e.target)) return;
+            if (e.ctrlKey || e.metaKey || e.altKey) {
+                if(hoveredText && e.key === "e"){
+                    handleEditText(hoveredText);
+                }
+                return;
+            }
 
-            if(e.key === "h"){
+            if(e.key === "h" || e.key === "1"){
                 setActiveTool("hand");
-            }else if(e.key === "s"){
+            }else if(e.key === "s" || e.key === "2"){
                 setActiveTool("select");
             }else if(e.key === "e"){
                 setActiveTool("eraser");
+            }else if(e.key === "r"){
+                setActiveTool("rectangle");
+            }else if(e.key === "t"){
+                setActiveTool("text");
+            }else if(e.key === "a"){
+                setActiveTool("pencil");
+            }else if(e.key === "d"){
+                setActiveTool("ellipse");
+            }else if(e.key === "w"){
+                setActiveTool("line");
             }
         }
 
@@ -462,7 +477,7 @@ function Board(){
             setTextInput((prev) => prev ? { ...prev, height: newHeight } : prev);
         }
     }
-    function handleEditButtonClick(element){
+    function handleEditText(element){
         if (textInput) {
             commitText();
         }
@@ -492,7 +507,7 @@ function Board(){
                 <button
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleEditButtonClick(hoveredText)}
+                    onClick={() => handleEditText(hoveredText)}
                     style={{
                         position: "fixed",
                         left: hoveredText.x * viewportTransform.current.scale + viewportTransform.current.x - 12,
