@@ -13,5 +13,7 @@ alter table board_element auto_increment = 1;
 delete from board;
 alter table board auto_increment = 1;
 
+delete from board where owner_id is null;
+
 
 

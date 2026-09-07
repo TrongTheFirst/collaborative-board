@@ -1,5 +1,6 @@
 import {useRef, useEffect, useState} from 'react'
 import { useParams, useNavigate, useLocation} from "react-router-dom";
+import { PencilSparkles } from "lucide-react";
 import rough from "roughjs/bin/rough";
 import Toolbar from "./Toolbar.jsx";
 import OptionsBar from "./OptionsBar.jsx";
@@ -22,6 +23,7 @@ import { createEraserTool } from "./tools/Eraser.js";
 import { createHandTool } from "./tools/Hand.js";
 import { createSelectorTool } from "./tools/Selector.js";
 import { handleCopy, handlePaste } from "./tools/CopyPaste.js";
+import { drawImageElement } from "./tools/Image.js";
 
 function Board(){
     const [openCollabStartModal, setOpenCollabStartModal] = useState(false);
@@ -32,6 +34,7 @@ function Board(){
     const [textInput, setTextInput] = useState(null);
     const [errors, setErrors] = useState(null);
     const [zoomPercent, setZoomPercent] = useState(100);
+    const [hoveredText, setHoveredText] = useState(null);
 
     const { showNotif } = useNotif();
     const {sendDrawing, sendUpdate, sendErase, inSession, connectToRoom, isHost, viewMode} = useSession();
@@ -48,6 +51,7 @@ function Board(){
     const pageInitializedRef = useRef(false);
     const drawingsCountRef = useRef(0);
     const textAreaRef = useRef(null);
+    const focusedTextRef = useRef(null);
     const activeToolRef = useRef(activeTool);
     const viewportTransform = useRef({x: 0, y: 0, scale: 1});
     const zoomActions = useRef({});
@@ -80,6 +84,9 @@ function Board(){
             case "line":
                 drawLineElement(canvas, drawing);
                 break;
+            case "image":
+                drawImageElement(canvas, drawing, ()=>drawBoard());
+                break;
             default:
                 console.warn(`No renderer for element type "${drawing.type}"`);
         }
@@ -93,9 +100,13 @@ function Board(){
     }
     function toFaded(drawing){
         if(!drawing.beingErased) return drawing;
-        return drawing.type === "text"
-            ? { ...drawing, fillStyle: hexToRgba(drawing.fillStyle ?? "#000000", 0.35) }
-            : { ...drawing, strokeColor: hexToRgba(drawing.strokeColor ?? "#000000", 0.35) };
+        if(drawing.type === "text"){
+            return { ...drawing, fillStyle: hexToRgba(drawing.fillStyle ?? "#000000", 0.35) };
+        }
+        if(drawing.type === "image"){
+            return { ...drawing, opacity: 0.35 };
+        }
+        return { ...drawing, strokeColor: hexToRgba(drawing.strokeColor ?? "#000000", 0.35) };
     }
 
     function drawBoard(elements = drawingsRef.current){
@@ -105,7 +116,7 @@ function Board(){
 
         elements.forEach((drawing) => {
             const faded = toFaded(drawing);
-            if(faded.type === "text"){
+            if(faded.type === "text" || faded.type === "image"){
                 drawElement(ctx, faded);
             }
             else{
@@ -123,7 +134,7 @@ function Board(){
     //load drawings
     useEffect(() => {
         drawingsRef.current = drawings;
-        drawingsCopyRef.current = drawings.map(d => ({...d, beingErase:false}));
+        drawingsCopyRef.current = drawings.map(d => ({...d, beingErased:false}));
         setDrawingsCopy(drawingsCopyRef.current);
 
         if (!canvasRef.current) return;
@@ -155,8 +166,17 @@ function Board(){
     useEffect(() => {activeToolRef.current = activeTool;}, [activeTool]);
     //text tool textarea update
     useEffect(() => {
+        // if (!canvasRef.current || !pageInitializedRef.current) return;
         if (textInput && textAreaRef.current) {
             textAreaRef.current.focus();
+        }
+
+        const editingId = textInput?.clientId;
+        clearCanvas();
+        if (editingId) {
+            drawBoard(drawingsRef.current.filter(d => d.clientId !== editingId));
+        } else {
+            drawBoard(drawingsRef.current);
         }
     }, [textInput]);
 
@@ -181,7 +201,13 @@ function Board(){
         }
 
         const pencil = createPencilTool(previewRc, previewCanvas, viewportTransform);
-        const text = createTextTool(previewRc, previewCanvas, setTextInput);
+        const text = createTextTool(previewRc, previewCanvas, setTextInput, drawingsCopyRef, (hover)=>{
+            if (activeToolRef.current === "text") {
+                setHoveredText(hover);
+            } else if (hoveredText) {
+                setHoveredText(null);
+            }
+        });
         const rectangle = createRectangleTool(previewRc, previewCanvas);
         const ellipse = createEllipseTool(previewRc, previewCanvas);
         const line = createLineTool(previewRc, previewCanvas);
@@ -242,15 +268,7 @@ function Board(){
             if (!drawing) return;
 
             if(activeToolRef.current === "eraser") {
-                drawing.forEach(d => {
-                    if(inSession()){
-                        sendErase(boardId, d.clientId);
-                    }else{
-                        deleteDrawingByClientId(d.clientId);
-                        removeDrawingByClientId(d.clientId);
-                        drawingsCountRef.current -= 1;
-                    }
-                })
+                drawing.forEach(d => eraseElement(d.clientId))
                 return;
             }
 
@@ -340,8 +358,16 @@ function Board(){
             if (isTypingTarget(document.activeElement)) return;
             e.clientX = lastPointerPosition.current.x;
             e.clientY = lastPointerPosition.current.y;
+            const ctx = previewCanvas.getContext("2d");
             handlePaste(e, boardId, inSession, sendDrawing, addDrawing, setBoardDrawings, drawingsCountRef);
         }
+        function cut(){
+            if(selectedElement.current){
+                eraseElement(selectedElement.current.clientId);
+                selectedElement.current = null;
+            }
+        }
+
 
         function handleHotKeys(e){
             if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -349,7 +375,7 @@ function Board(){
 
             if(e.key === "h"){
                 setActiveTool("hand");
-            }else if(e.key === "f"){
+            }else if(e.key === "s"){
                 setActiveTool("select");
             }else if(e.key === "e"){
                 setActiveTool("eraser");
@@ -366,10 +392,13 @@ function Board(){
         window.addEventListener("resize", resize);
         window.addEventListener("copy", copy);
         window.addEventListener("paste", paste);
+        window.addEventListener("cut", cut);
         return () => {
+            window.removeEventListener("keydown", handleHotKeys);
             window.removeEventListener("resize", resize);
             window.removeEventListener("copy", copy);
             window.removeEventListener("paste", paste);
+            window.removeEventListener("cut", cut);
             canvas.removeEventListener("pointerdown", handlePointerDown);
             canvas.removeEventListener("pointermove", handlePointerMove);
             canvas.removeEventListener("pointerup", handlePointerUp);
@@ -378,24 +407,53 @@ function Board(){
         };
     }, [boardId, drawings, viewMode]);
 
-    function commitText() {
-        const drawing = commitTextTool(previewCanvasRef.current, textAreaRef.current, textInput);
-        setTextInput(null);
-
-        if (!drawing) return;
-
-        const {type, ...elementData} = drawing;
-        const boardElement = { elementId: 0, boardId, type, elementData };
-        if (inSession()) {
-            sendDrawing(boardElement);
-        } else {
-            addDrawing(boardElement);
-            drawingsCountRef.current += 1;
-            setBoardDrawings(drawing);
+    function eraseElement(clientId){
+        if(inSession()){
+            sendErase(boardId, clientId);
+        }else{
+            deleteDrawingByClientId(clientId);
+            removeDrawingByClientId(clientId);
+            drawingsCountRef.current -= 1;
         }
     }
 
-    function handleTextAreaInput(e) {
+    function commitText() {
+        const box = textInput;
+        if(!box) return;
+
+        const drawing = commitTextTool(previewCanvasRef.current, textAreaRef.current, box);
+        setTextInput(null);
+        setHoveredText(null);
+
+        if (!drawing) return;
+
+        if(drawing.deleted){
+            eraseElement(drawing.clientId);
+            return;
+        }
+
+        const isEditing = !!box?.clientId;
+        const {type, ...elementData} = drawing;
+        const boardElement = { elementId: 0, boardId, type, elementData };
+        if (isEditing) {
+            if (inSession()) {
+                sendUpdate(boardElement);
+            } else {
+                updateDrawing(boardElement);
+                updateBoardDrawings(drawing);
+            }
+        } else {
+            if (inSession()) {
+                sendDrawing(boardElement);
+            } else {
+                addDrawing(boardElement);
+                drawingsCountRef.current += 1;
+                setBoardDrawings(drawing);
+            }
+        }
+    }
+
+    function increaseTextareaInput(e) {
         const textarea = e.target;
 
         if (textarea.scrollHeight > textarea.clientHeight) {
@@ -403,6 +461,12 @@ function Board(){
             textarea.style.height = `${newHeight}px`;
             setTextInput((prev) => prev ? { ...prev, height: newHeight } : prev);
         }
+    }
+    function handleEditButtonClick(element){
+        if (textInput) {
+            commitText();
+        }
+        setTextInput(element);
     }
 
     return(
@@ -424,11 +488,29 @@ function Board(){
             <NotificationBanner />
             <canvas ref={canvasRef} className="fixed z-0 inset-0 w-screen h-screen"  />
             <canvas ref={previewCanvasRef} className="fixed z-0 inset-0 w-screen h-screen pointer-events-none" />
+            {hoveredText && !textInput && (
+                <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleEditButtonClick(hoveredText)}
+                    style={{
+                        position: "fixed",
+                        left: hoveredText.x * viewportTransform.current.scale + viewportTransform.current.x - 12,
+                        top: hoveredText.y * viewportTransform.current.scale + viewportTransform.current.y - 12,
+                        zIndex: 50,
+                    }}
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-white border border-gray-300 shadow-sm hover:bg-gray-100"
+                    aria-label="Edit text"
+                >
+                    <PencilSparkles />
+                </button>
+            )}
             {textInput && (
                 <textarea
                     ref={textAreaRef}
+                    defaultValue={textInput.text ?? ""}
                     onBlur={commitText}
-                    onInput={handleTextAreaInput}
+                    onInput={increaseTextareaInput}
                     style={{
                         position: "fixed",
                         left: textInput.x * viewportTransform.current.scale + viewportTransform.current.x + 3,

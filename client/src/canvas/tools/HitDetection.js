@@ -74,15 +74,22 @@ function hitEllipse(x,y,drawing){
     return Math.abs(dist - 1) <= tolerance;
 }
 
+function hitContainer(x,y,image){
+    return x>=image.x && y>=image.y
+            && x<=image.x+image.width && y <=image.y+image.height;
+}
+
 function pointsHitDrawing(x,y,drawing){
     switch (drawing.type) {
         case "freedraw":
             return hitPencil(x,y,drawing);
         case "line":
             return hitLine(x,y,drawing);
-        case "text":
         case "rectangle":
             return hitBox(x, y, drawing);
+        case "text":
+        case "image":
+            return hitContainer(x,y,drawing);
         case "ellipse":
             return hitEllipse(x,y,drawing);
         default:

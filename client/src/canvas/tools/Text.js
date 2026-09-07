@@ -1,3 +1,5 @@
+import {pointsHitDrawing} from "./HitDetection.js";
+
 export const TEXT_STYLE = {
     fillStyle: "#000000",
     fontSize: "20px",
@@ -72,7 +74,19 @@ export function commitTextTool(previewCanvas, textArea, box){
     ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
     ctx.restore();
 
-    if (!value || !box) return null;
+    if (!box) return null;
+
+    const isEditing = !!box.clientId;
+
+    if(!value){
+        return isEditing ? {deleted: true, clientId: box.clientId} : null;
+    }
+
+    if(isEditing){
+        if (value === box.text) return null;
+        const { beingErased, ...clean } = box;
+        return { ...clean, text: value };
+    }
 
     return {
         clientId: crypto.randomUUID(),
@@ -86,11 +100,22 @@ export function commitTextTool(previewCanvas, textArea, box){
     };
 }
 
-export function createTextTool(previewRc, previewCanvas, onPlace){
+export function createTextTool(previewRc, previewCanvas, onPlace, drawings, onHover){
     let isWriting = false;
     let starting = {x: 0, y: 0};
     let lastX = 0;
     let textBox = null
+
+    function findTextAt(x, y){
+        const texts = drawings?.current.filter(d => d.type === "text");
+        for(let i = texts.length - 1; i >= 0; i--){
+            const text = texts[i];
+            if(pointsHitDrawing(x, y, text)){
+                return text;
+            }
+        }
+        return null;
+    }
 
     function getTextBox(){
         const x = Math.min(starting.x, lastX);
@@ -128,10 +153,15 @@ export function createTextTool(previewRc, previewCanvas, onPlace){
     function onPointerDown(e){
         isWriting = true;
         starting = {x: e.clientX, y: e.clientY};
+        lastX = e.clientX;
     }
 
     function onPointerMove(e){
-        if(!isWriting) return;
+        if(!isWriting) {
+            const hovering = findTextAt(e.clientX, e.clientY);
+            onHover?.(hovering);
+            return;
+        }
 
         lastX = e.clientX;
         drawPreview();
@@ -140,6 +170,7 @@ export function createTextTool(previewRc, previewCanvas, onPlace){
     function onPointerUp(e){
         if(!isWriting) return null;
         isWriting = false;
+
 
         onPlace(getTextBox());
         clearPreview();
