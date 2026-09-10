@@ -53,7 +53,10 @@ create table room(
 	constraint room_board
 		foreign key(board_id)
 		references board(board_id)
+		on delete cascade
 );
+
+
 
 create table board_member(
 	id bigint primary key auto_increment,

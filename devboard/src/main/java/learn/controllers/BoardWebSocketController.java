@@ -28,7 +28,6 @@ public class BoardWebSocketController {
     private final RoomService roomService;
     private final BoardMemberService memberService;
 
-    //TODO make more secure
     @MessageMapping("/room/create")
     public void createRoom(@Payload CreateRoomRequest request, StompHeaderAccessor headerAccessor) throws DataAccessException {
         Long authenticatedUserId = (Long) headerAccessor.getSessionAttributes().get("userId");

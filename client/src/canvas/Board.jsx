@@ -30,7 +30,7 @@ function Board(){
     const [openCollabEndModal, setOpenCollabEndModal] = useState(false);
     const [openLoginModal, setOpenLoginModal] = useState(false);
     const [openCreateModal, setOpenCreateModal] = useState(false);
-    const [activeTool, setActiveTool] = useState("pencil");
+    const [activeTool, setActiveTool] = useState("hand");
     const [textInput, setTextInput] = useState(null);
     const [errors, setErrors] = useState(null);
     const [zoomPercent, setZoomPercent] = useState(100);
@@ -163,7 +163,10 @@ function Board(){
         drawBoard(drawingsCopy);
     }, [drawingsCopy]);
     //get current tool
-    useEffect(() => {activeToolRef.current = activeTool;}, [activeTool]);
+    useEffect(() => {
+        activeToolRef.current = activeTool;
+        setHoveredText(null);
+    }, [activeTool]);
     //text tool textarea update
     useEffect(() => {
         // if (!canvasRef.current || !pageInitializedRef.current) return;
@@ -200,7 +203,7 @@ function Board(){
             drawBoard(drawingsRef.current);
         }
 
-        const pencil = createPencilTool(previewRc, previewCanvas, viewportTransform);
+        const pencil = createPencilTool(previewRc, previewCanvas);
         const text = createTextTool(previewRc, previewCanvas, setTextInput, drawingsCopyRef, (hover)=>{
             if (activeToolRef.current === "text") {
                 setHoveredText(hover);
@@ -220,10 +223,10 @@ function Board(){
             setDrawingsCopy([...drawingsCopyRef.current]);
         }, selection=>{selectedElement.current = selection});
         const tools = { pencil, rectangle, ellipse, line, text, eraser, hand, select };
-        let getActiveTool = () => tools[activeToolRef.current] ?? pencil;
+        let getActiveTool = () => tools[activeToolRef.current] ?? hand;
 
         if(viewMode && !isHost()){
-            getActiveTool = () => line;
+            getActiveTool = () => hand;
             setActiveTool("hand");
         }
 
@@ -351,17 +354,18 @@ function Board(){
             return target?.tagName === "INPUT" || target?.tagName === "TEXTAREA";
         }
         function copy(e){
-            if (isTypingTarget(document.activeElement)) return;
+            if (isTypingTarget(document.activeElement) || (viewMode && !isHost())) return;
             handleCopy(selectedElement, e)
         }
         function paste(e){
-            if (isTypingTarget(document.activeElement)) return;
+            if (isTypingTarget(document.activeElement) || (viewMode && !isHost())) return;
             e.clientX = lastPointerPosition.current.x;
             e.clientY = lastPointerPosition.current.y;
             const ctx = previewCanvas.getContext("2d");
             handlePaste(e, boardId, inSession, sendDrawing, addDrawing, setBoardDrawings, drawingsCountRef);
         }
         function cut(){
+            if((viewMode && !isHost())) retur;
             if(selectedElement.current){
                 eraseElement(selectedElement.current.clientId);
                 selectedElement.current = null;
@@ -370,7 +374,7 @@ function Board(){
 
 
         function handleHotKeys(e){
-            if(isTypingTarget(e.target)) return;
+            if(isTypingTarget(e.target) || (viewMode && !isHost())) return;
             if (e.ctrlKey || e.metaKey || e.altKey) {
                 if(hoveredText && e.key === "e"){
                     handleEditText(hoveredText);
