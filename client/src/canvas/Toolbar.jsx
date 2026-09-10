@@ -3,16 +3,16 @@ import { useSession } from "../contexts/SessionContext.jsx";
 
 function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeTool, setActiveTool }) {
     const tools = [
-        { icon: Hand, label: "Hand", tool: "hand" },
-        { icon: MousePointer2, label: "Pointer", tool: "pointer" },
-        { icon: Square, label: "Rectangle", tool: "rectangle" },
-        { icon: Circle, label: "Ellipse", tool: "ellipse" },
-        { icon: Minus, label: "Line", tool: "line" },
-        { icon: Pencil, label: "Pencil", tool: "pencil" },
-        { icon: Type, label: "Text", tool: "text" },
-        { icon: Eraser, label: "Erase", tool: "eraser" },
+        { icon: Hand, label: "Hand", tool: "hand", hotkey: " - H, 1"},
+        { icon: MousePointer2, label: "Select", tool: "select", hotkey: " - S, 2" },
+        { icon: Square, label: "Rectangle", tool: "rectangle", hotkey: " - R" },
+        { icon: Circle, label: "Ellipse", tool: "ellipse", hotkey: " - D" },
+        { icon: Minus, label: "Line", tool: "line", hotkey: " - W" },
+        { icon: Pencil, label: "Pencil", tool: "pencil", hotkey: " - A" },
+        { icon: Type, label: "Text", tool: "text", hotkey: " - T" },
+        { icon: Eraser, label: "Erase", tool: "eraser", hotkey: " - E" },
     ];
-    const { viewMode, isHost} = useSession();
+    const { viewMode, isHost, inSession} = useSession();
 
     function toolButtonClasses(tool) {
         const isActive = tool !== null && tool === activeTool;
@@ -25,11 +25,13 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
         <div className="fixed inset-0 z-50 pointer-events-none">
             <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-auto">
                 <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200 shadow-sm px-2 py-2 ">
-                    {tools.slice(0, 2).map(({ icon: Icon, label, tool }) => (
+                    {tools.slice(0, 2).map(({ icon: Icon, label, tool, hotkey }) => (
                         <button
                             key={label}
                             aria-label={label}
+                            title={label + hotkey}
                             disabled={viewMode && !isHost()}
+                            onClick={tool ? () => setActiveTool(tool) : undefined}
                             className={toolButtonClasses(tool)}
 
                         >
@@ -39,10 +41,11 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
 
                     <div className="w-px h-6 bg-gray-200 mx-1" />
 
-                    {tools.slice(2,8).map(({ icon: Icon, label, tool }) => (
+                    {tools.slice(2,8).map(({ icon: Icon, label, tool, hotkey }) => (
                         <button
                             key={label}
                             aria-label={label}
+                            title={label + hotkey}
                             disabled={viewMode && !isHost()}
                             onClick={tool ? () => setActiveTool(tool) : undefined}
                             className={toolButtonClasses(tool)}
@@ -51,10 +54,11 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                         </button>
                     ))}
                     <div className="w-px h-6 bg-gray-200 mx-1" />
-                    {tools.slice(8,9).map(({ icon: Icon, label, tool }) => (
+                    {tools.slice(8,9).map(({ icon: Icon, label, tool, hotkey}) => (
                         <button
                             key={label}
                             aria-label={label}
+                            title={label + hotkey}
                             disabled={viewMode && !isHost()}
                             onClick={tool ? () => setActiveTool(tool) : undefined}
                             className={toolButtonClasses(tool)}
@@ -66,8 +70,9 @@ function Toolbar({ clearDrawings, clearCanvas, deleteAllBoardElements, activeToo
                     <div className="group relative">
                         <button
                             aria-label="Trash"
-                            disabled={viewMode && !isHost()}
-                            className="art-button w-10 h-10 "
+                            title={"Clear board"}
+                            disabled={inSession()}
+                            className={`art-button w-10 h-10 ${inSession() ? "opacity-40 cursor-not-allowed hover:bg-transparent":""}`}
                             onClick={() => {
                                 clearDrawings();
                                 clearCanvas();

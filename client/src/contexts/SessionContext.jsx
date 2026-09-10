@@ -1,10 +1,13 @@
 import {createContext, useContext, useEffect, useRef, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {Client} from "@stomp/stompjs";
+import {useNotif} from "./NotificationContext.jsx";
 
 const SessionContext = createContext(null);
 
 export function SessionProvider({children}) {
+    const { showNotif } = useNotif();
+
     const stompClient = useRef(null);
     const subscription = useRef(null);
     const roomEndedSubscription = useRef(null);
@@ -57,9 +60,30 @@ export function SessionProvider({children}) {
         });
     }
 
+    useEffect(() => {
+        const onUnload = () => {
+            if(roomCode.current) {
+                cleanupRoomConnection();
+            }
+        }
+        const beforeUnload = (e) => {
+            if(!isHost()) return;
+
+            e.preventDefault();
+            e.returnValue = "";
+        };
+        window.addEventListener("pagehide", onUnload);
+        window.addEventListener("beforeunload", beforeUnload);
+
+        return () => {
+            window.removeEventListener("pagehide", onUnload);
+            window.removeEventListener("beforeunload", beforeUnload);
+        }
+    },[])
 
 
-    function connectToRoom(newRoomCode, displayName, onReply, onNewDrawing, onErase, onRoomEnd){
+
+    function connectToRoom(newRoomCode, displayName, subReq){
         console.log("Calling connectToRoom...")
         if (!stompClient.current) {
             console.log("Stomp client null. Leaving connectToRoom...")
@@ -79,8 +103,9 @@ export function SessionProvider({children}) {
             const replySub = stompClient.current.subscribe(replyTopic, (message) => {
                 let { success, errors, boardId, viewMode, elements, member, members} = JSON.parse(message.body);
                 if (!success) {
+                    showNotif("Failed to connect to room...");
                     console.error(errors);
-                    onRoomEnd(isHost());
+                    subReq.onRoomEnd(isHost());
                     navigate("/")
                 } else {
                     sessionDisplayName.current = member.displayName;
@@ -88,8 +113,8 @@ export function SessionProvider({children}) {
                     host.current = member.roleId === 2;
                     setCollaborators(members);
                     elements = elements.map(element => ({ type: element.type, ...element.elementData }));
-                    onReply(boardId, elements);
-                    subscribeToRoom(newRoomCode, onNewDrawing, onErase, onRoomEnd);
+                    subReq.onReply(boardId, elements);
+                    subscribeToRoom(newRoomCode, subReq.onNewDrawing, subReq.onErase, subReq.onUpdate, subReq.onRoomEnd)
                 }
                 replySub.unsubscribe();
             });
@@ -120,12 +145,13 @@ export function SessionProvider({children}) {
             const replySub = stompClient.current.subscribe(replyTopic, (message) => {
                 const { success, errors, member } = JSON.parse(message.body);
                 if (!success) {
+                    showNotif("Failed to create room...");
                     console.log(errors);
                 } else {
                     host.current = true;
                     sessionDisplayName.current = member.displayName;
                     setCollaborators((prev)=>[...prev, member]);
-                    subscribeToRoom(member.roomCode, subReq.onNewDrawing, subReq.onErase, subReq.onRoomEnd)
+                    subscribeToRoom(member.roomCode, subReq.onNewDrawing, subReq.onErase, subReq.onUpdate, subReq.onRoomEnd)
                     navigate(`/room/${member.roomCode}`);
                 }
                 replySub.unsubscribe();
@@ -142,7 +168,7 @@ export function SessionProvider({children}) {
         delayOnConnectDo(sendCreateRequest);
     }
 
-    function subscribeToRoom(newRoomCode, onNewDrawing, onErase, onRoomEnd){
+    function subscribeToRoom(newRoomCode, onNewDrawing, onErase, onUpdate, onRoomEnd){
         unsubscribe();
         roomCode.current = newRoomCode;
         const replyTopic = `/topic/room/${newRoomCode}`;
@@ -150,23 +176,30 @@ export function SessionProvider({children}) {
         subscription.current = stompClient.current.subscribe(replyTopic, (message) => {
             const { success, type, error, payload } = JSON.parse(message.body);
             if (!success) {
+                showNotif("Failed to subscribe to room...");
                 console.error(error);
             } else if(type === "add"){
                 const drawing = { type: payload.type, ...payload.elementData };
                 onNewDrawing(drawing);
             }else if(type === "erase"){
                 onErase(payload);
+            }else if(type === "update"){
+                const drawing = { type: payload.type, ...payload.elementData };
+                onUpdate(drawing);
             }
         });
 
         joinRoomSubscription.current = stompClient.current.subscribe(replyTopic+"/joined", (message) => {
             const {type, member} = JSON.parse(message.body);
             if(type === "join"){
+                if(collaborators.some(m=>m.id === member.id)) return;
+                showNotif(`${member.displayName} joined the room!`, false);
                 setCollaborators((prev) => {
                     const exists = prev.some((m) => m.id === member.id);
                     return exists ? prev : [...prev, member];
                 });
             }else if(type === "leave"){
+                showNotif(`${member.displayName} left the room!`, false);
                 setCollaborators((prev) => {
                     return prev.filter((m) => m.id !== member.id);
                 });
@@ -180,6 +213,7 @@ export function SessionProvider({children}) {
                 console.log(`${rule} : ${ruleToggle}`)
                 switch(rule){
                     case "view":
+                        showNotif(`Host turned ${ruleToggle ? "on":"off"} view only`, false);
                         setViewMode(ruleToggle);
                         break;
                 }
@@ -190,13 +224,13 @@ export function SessionProvider({children}) {
             const { success, error } = JSON.parse(message.body);
             if(success && !host.current){
                 navigate("/");
-                window.alert("Host ended room");
+                showNotif("Host ended room", false);
                 onRoomEnd(host.current);
             }
         })
     }
 
-    const disconnectFromRoom = () => {
+    function cleanupRoomConnection(){
         if(host.current){
             endRoom();
             host.current = false;
@@ -208,6 +242,9 @@ export function SessionProvider({children}) {
         roomCode.current = null;
         setCollaborators([]);
         pendingOnConnectActions.current = []
+    }
+    const disconnectFromRoom = () => {
+        cleanupRoomConnection();
         navigate("/");
     };
 
@@ -227,6 +264,10 @@ export function SessionProvider({children}) {
     }
 
     function sendMessage(destination, message){
+        if (!stompClient.current?.connected) {
+            showNotif("No connection to server");
+            return;
+        }
         stompClient.current.publish({
             destination,
             body: JSON.stringify(message)
@@ -237,7 +278,13 @@ export function SessionProvider({children}) {
         if(viewMode && !host.current){
             return;
         }
-        sendMessage(`/app/room/${roomCode.current}`, {sender:clientId.current, element:boardElement});
+        sendMessage(`/app/room/${roomCode.current}/add`, {sender:clientId.current, element:boardElement});
+    }
+    function sendUpdate(boardElement){
+        if(viewMode && !host.current){
+            return;
+        }
+        sendMessage(`/app/room/${roomCode.current}/update`, {sender:clientId.current, element:boardElement});
     }
     function sendErase(boardId, elementClientId){
         if(viewMode && !host.current){
@@ -330,6 +377,7 @@ export function SessionProvider({children}) {
             disconnectFromRoom,
             sendDrawing,
             sendErase,
+            sendUpdate,
             createRoom,
             viewMode,
             sendRuleToggle,

@@ -17,7 +17,9 @@ public class BoardMapper implements RowMapper<Board> {
                 rs.getLong("owner_id"),
                 rs.getString("name"),
                 rs.getObject("created_at", LocalDateTime.class),
-                rs.getObject("updated_at", LocalDateTime.class)
+                rs.getObject("updated_at", LocalDateTime.class),
+                rs.getBoolean("is_trashed"),
+                rs.getObject("trashed_at", LocalDateTime.class)
         );
     }
 }

@@ -3,11 +3,13 @@ package learn.domain;
 import learn.data.DataAccessException;
 import learn.data.repository_interface.BoardElementRepository;
 import learn.data.repository_interface.BoardRepository;
+import learn.models.Board;
 import learn.models.BoardElement;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -42,16 +44,52 @@ public class BoardElementService {
             return result;
         }
 
-        if(boardRepository.findById(boardElement.getBoardId()) == null){
+        Board board = boardRepository.findById(boardElement.getBoardId());
+        if(board == null){
             result.addErrorMessage("Board %s was not found", ResultType.NOT_FOUND, boardElement.getBoardId());
         }
 
         if(result.isSuccess()){
             BoardElement created = repository.add(boardElement);
             result.setPayload(created);
+            board.setUpdatedAt(LocalDateTime.now());
+            boardRepository.update(board);
         }
         return result;
     }
+
+    public Result<BoardElement> updateByClientId(BoardElement boardElement) throws DataAccessException {
+        Result<BoardElement> result = new Result<>();
+
+        JsonNode elementData = boardElement.getElementData();
+        long boardId = boardElement.getBoardId();
+        String type = boardElement.getType();
+
+        if(elementData == null){
+            result.addErrorMessage("Board element data cannot be null", ResultType.INVALID);
+            return result;
+        }
+        if(!elementData.has("x") || !elementData.has("y")){
+            result.addErrorMessage("Element data does not have a position", ResultType.INVALID);
+            return result;
+        }
+        if(!elementData.has("clientId")){
+            result.addErrorMessage("Element data does not have a clientId", ResultType.INVALID);
+            return result;
+        }
+        if(boardRepository.findById(boardId) == null){
+            result.addErrorMessage("Board %s was not found", ResultType.NOT_FOUND, boardId);
+            return result;
+        }
+        if(!repository.updateByClientId(boardId, elementData)){
+            result.addErrorMessage("Board element was not found", ResultType.NOT_FOUND, elementData.get("clientId").asString());
+            return result;
+        }
+        //elementId does not matter. client discards elementId
+        result.setPayload(new BoardElement(0, boardId, type, elementData));
+        return result;
+    }
+
     public Result<BoardElement> delete(long id) throws DataAccessException {
         Result<BoardElement> result = new Result<>();
         if(!repository.delete(id)){

@@ -28,7 +28,6 @@ public class BoardWebSocketController {
     private final RoomService roomService;
     private final BoardMemberService memberService;
 
-    //TODO make more secure
     @MessageMapping("/room/create")
     public void createRoom(@Payload CreateRoomRequest request, StompHeaderAccessor headerAccessor) throws DataAccessException {
         Long authenticatedUserId = (Long) headerAccessor.getSessionAttributes().get("userId");
@@ -117,7 +116,7 @@ public class BoardWebSocketController {
     }
 
 
-    @MessageMapping("/room/{roomCode}")
+    @MessageMapping("/room/{roomCode}/add")
     public void addBoardElement(@Payload BoardElementMessage message, @DestinationVariable String roomCode) throws DataAccessException {
         Room room = roomService.findByRoomCode(roomCode);
         if(room.isViewMode() && !room.getHostClientId().equals(message.sender())){
@@ -133,6 +132,23 @@ public class BoardWebSocketController {
 
         messagingTemplate.convertAndSend("/topic/room/" + roomCode,
                 new BoardElementResponse(true, "add",null, result.getPayload()));
+    }
+
+    @MessageMapping("/room/{roomCode}/update")
+    public void updateBoardElement(@Payload BoardElementMessage message, @DestinationVariable String roomCode) throws DataAccessException {
+        Room room = roomService.findByRoomCode(roomCode);
+        if(room.isViewMode() && !room.getHostClientId().equals(message.sender())){
+            return;
+        }
+        Result<BoardElement> result = elementService.updateByClientId(message.element());
+
+        if (!result.isSuccess()) {
+            messagingTemplate.convertAndSend("/topic/room/" + roomCode,
+                    new BoardElementResponse(false, "update","Failed to update element",null));
+            return;
+        }
+        messagingTemplate.convertAndSend("/topic/room/" + roomCode,
+                new BoardElementResponse(true, "update",null, result.getPayload()));
     }
 
     @MessageMapping("/room/{roomCode}/delete")

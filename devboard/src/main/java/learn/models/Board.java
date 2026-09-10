@@ -16,4 +16,6 @@ public class Board {
     private String boardName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private boolean isTrashed;
+    private LocalDateTime trashedAt;
 }

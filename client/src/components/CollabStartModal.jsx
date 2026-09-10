@@ -5,8 +5,8 @@ import { useAuth } from "../contexts/AuthContext.jsx"
 
 function CollabStartModal({ setOpenCollabStartModal, setOpenCollabEndModal }) {
     const { connectToBoard, disconnectFromRoom, createRoom} = useSession();
-    const { boardId, setBoardDrawings, removeDrawingByClientId, clearBoard,
-            setBoardId, setBoardState} = useBoard();
+    const { boardId, setBoardDrawings, updateBoardDrawings, removeDrawingByClientId,
+        clearBoard, setBoardId, setBoardState, showErr} = useBoard();
     const { userId, displayName } = useAuth();
 
     function handleCollabButton() {
@@ -20,7 +20,8 @@ function CollabStartModal({ setOpenCollabStartModal, setOpenCollabEndModal }) {
                 clearBoard();
             }
         }
-        createRoom(boardId, userId, displayName, {onReply, onNewDrawing:setBoardDrawings, onErase:removeDrawingByClientId, onRoomEnd});
+        createRoom(boardId, userId, displayName,
+            {onReply, onNewDrawing:setBoardDrawings, onErase:removeDrawingByClientId, onUpdate:updateBoardDrawings ,onRoomEnd});
         setOpenCollabEndModal(true);
         setOpenCollabStartModal(false);
     }

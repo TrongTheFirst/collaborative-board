@@ -1,7 +1,8 @@
-import {createContext, useCallback, useContext, useState, useRef, useEffect} from "react";
-import { useParams } from "react-router-dom"
+import {createContext, useCallback, useContext, useState, useRef, useEffect } from "react";
+import { useParams, useNavigate} from "react-router-dom"
 import {useAuth} from "./AuthContext.jsx";
 import {useSession} from "./SessionContext.jsx";
+import {useNotif} from "./NotificationContext.jsx";
 
 /*
 on load, determine if board is in DB (has boardId).
@@ -13,13 +14,20 @@ when boardId changes, fetch drawings or add board
 const BoardContext = createContext(null);
 export function BoardProvider({ children }) {
 
-    const { userId, displayName, BASE_URL} = useAuth();
+    const { userId, displayName, expiration, BASE_URL, logout} = useAuth();
     const { connectToRoom, disconnectFromRoom, isInRoom } = useSession();
+    const { showNotif } = useNotif();
+    const navigate = useNavigate();
     const [drawings,setDrawings] = useState([]);
     const [drawingsLoaded, setDrawingsLoaded] = useState(false);
     const currentBoard = useRef(null);
     const createBoard = useRef(false)
     const [boardId, setBoardId] = useState(() => localStorage.getItem("boardId"));
+
+    const [notifications, setNotifications] = useState([]);
+    const notifQueue = useRef([]);
+    const MAX_VISIBLE_NOTIFS = 5;
+
     const { roomCode } = useParams();
 
     useEffect(()=>{
@@ -35,7 +43,8 @@ export function BoardProvider({ children }) {
                     clearBoard();
                 }
             };
-            connectToRoom(roomCode, displayName, onReply, setBoardDrawings, removeDrawingByClientId, onRoomEnd);
+            connectToRoom(roomCode, displayName,
+                {onReply, onNewDrawing:setBoardDrawings, onErase:removeDrawingByClientId, onUpdate:updateBoardDrawings ,onRoomEnd});
         }
     },[roomCode])
 
@@ -70,7 +79,9 @@ export function BoardProvider({ children }) {
             ownerId: 0,
             boardName: "Board",
             createdAt: Temporal.Now.plainDateTimeISO(),
-            updatedAt: Temporal.Now.plainDateTimeISO()
+            updatedAt: Temporal.Now.plainDateTimeISO(),
+            isTrashed: false,
+            trashedAt: null,
         }
         if(token){
             headers.Authorization = `Bearer ${token}`;
@@ -82,6 +93,7 @@ export function BoardProvider({ children }) {
             body: JSON.stringify(board)
         });
         if (!response.ok) {
+            showNotif("Failed to add board");
             throw new Error(`Request failed: ${response.status}`);
         }
         const payload = await response.json();
@@ -110,6 +122,8 @@ export function BoardProvider({ children }) {
         if(response.ok){
             const payload = await response.json();
             currentBoard.current = payload;
+        }else{
+            showNotif("Failed to fetch board");
         }
     }
     async function editBoard(board, token, userId){
@@ -122,7 +136,9 @@ export function BoardProvider({ children }) {
             ownerId: userId,
             boardName: board.boardName,
             createdAt: board.createdAt,
-            updatedAt: Temporal.Now.plainDateTimeISO()
+            updatedAt: Temporal.Now.plainDateTimeISO(),
+            isTrashed: board.trashed,
+            trashedAt: board.trashedAt
         }
         const response = await fetch(BASE_URL+`/board/edit`,{
             method:"PUT",
@@ -130,51 +146,97 @@ export function BoardProvider({ children }) {
             body: JSON.stringify(toUpdate)
         });
         if (!response.ok) {
+            showNotif("Failed to update board");
             throw new Error(`Request failed: ${response.status}`);
         }
         setBoard(toUpdate)
     }
+    async function deleteBoard(boardId){
+        const token = localStorage.getItem("token");
+        const headers = {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        };
+        const response = await fetch(BASE_URL+`/board/delete`,{
+            method:"DELETE",
+            headers: headers,
+            body: JSON.stringify({ boardId, ownerId: userId})
+        });
+        if(!response.ok){
+            console.error(`Request failed: ${response.status}`);
+        }
+    }
     async function addDrawing(boardElement){
+        const headers = {"Content-Type": "application/json"};
+        const token = localStorage.getItem("token");
+        if(token){
+            headers.Authorization = `Bearer ${token}`;
+        }
         try{
             const response = await fetch(BASE_URL+`/element/add`,{
                 method:"POST",
-                headers: {"Content-Type": "application/json"},
+                headers,
                 body: JSON.stringify(boardElement)
             });
             if (!response.ok) {
                 throw new Error(`Failed to save drawing: ${response.status}`);
             }
         }catch(error){
+            showNotif("Failed to save drawing");
             console.error("Failed to add drawing", error);
+        }
+    }
+    async function updateDrawing(boardElement){
+        const headers = {"Content-Type": "application/json"};
+        const token = localStorage.getItem("token");
+        if(token){
+            headers.Authorization = `Bearer ${token}`;
+        }
+        try{
+            const response = await fetch(BASE_URL+`/element/update`,{
+                method:"PUT",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(boardElement)
+            });
+            if (!response.ok) {
+                throw new Error(`Failed to update drawing: ${response.status}`);
+            }
+        }catch(error){
+            showNotif("Failed to update drawing");
+            console.error("Failed to update drawing", error);
         }
     }
     async function deleteDrawingByClientId(clientId){
         const token = localStorage.getItem("token");
+        const headers = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
         try{
             const response = await fetch(BASE_URL+`/element/delete/${boardId}/${clientId}`,{
                 method:"DELETE",
-                headers: { "Authorization": `Bearer ${token}` }
+                headers
             });
             if (!response.ok) {
                 throw new Error(`Failed to delete element: ${response.status}`);
             }
         }catch(error){
+            showNotif("Failed to delete drawing");
             console.error("Failed to delete element", error);
         }
     }
     async function deleteAllBoardElements(){
         const token = localStorage.getItem("token");
+        const headers = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
         try{
             const response = await fetch(BASE_URL+`/element/delete/${boardId}`,{
                 method:"DELETE",
-                headers :{
-                    "Authorization": `Bearer ${token}`
-                }
+                headers
             });
             if (!response.ok) {
                 throw new Error(`Failed to delete board elements: ${response.status}`);
             }
         }catch(error){
+            showNotif("Failed to clear drawings");
             console.error("Failed to delete board elements", error);
         }
     }
@@ -185,6 +247,13 @@ export function BoardProvider({ children }) {
             localStorage.setItem("drawings",JSON.stringify(newDrawings));
             return newDrawings;
         });
+    }
+    function updateBoardDrawings(drawing){
+        setDrawings((prevState) => {
+            const newDrawings = prevState.map(d => d.clientId === drawing.clientId ? drawing : d);
+            localStorage.setItem("drawings",JSON.stringify(newDrawings));
+            return newDrawings;
+        })
     }
     function removeDrawingByClientId(clientId){
         setDrawings((prevState) => {
@@ -198,7 +267,6 @@ export function BoardProvider({ children }) {
         setDrawings(drawings);
         localStorage.setItem("drawings",JSON.stringify(drawings));
     }
-
 
     function clearDrawings(){
         setDrawings([]);
@@ -228,6 +296,32 @@ export function BoardProvider({ children }) {
         fetchBoard(boardId);
     }
 
+
+    //logout timer
+    useEffect(() => {
+        if (!expiration) return;
+
+        const expiresInMs = expiration* 1000 - Date.now();
+
+        if(expiresInMs <= 0) {
+            logout();
+            return;
+        }else if(expiresInMs <= 30) {
+            showNotif("Forced logout in 30 seconds")
+        } else if(expiresInMs <= 600) {
+            showNotif("Forced logout in 10 minutes")
+        }
+
+        const handleExpire = () =>{
+            logout();
+            clearBoard();
+            navigate("/")
+            showNotif("Forced logout")
+        }
+        const timer = setTimeout(handleExpire, expiresInMs);
+        return () => clearTimeout(timer);
+    }, [expiration])
+
     return (
         <BoardContext.Provider
             value={{
@@ -237,13 +331,16 @@ export function BoardProvider({ children }) {
                 setBoard,
                 addBoard,
                 editBoard,
+                deleteBoard,
                 loadBoard,
                 clearBoard,
                 drawings,
                 drawingsLoaded,
                 setBoardState,
                 setBoardDrawings,
+                updateBoardDrawings,
                 addDrawing,
+                updateDrawing,
                 clearDrawings,
                 deleteAllBoardElements,
                 deleteDrawingByClientId,

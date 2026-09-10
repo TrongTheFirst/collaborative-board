@@ -47,6 +47,21 @@ public class BoardElementController {
         return new ResponseEntity<>(result.getPayload(), HttpStatus.CREATED);
     }
 
+    @PutMapping("/update")
+    public  ResponseEntity<?> updateElement(@RequestBody BoardElement element, Authentication auth) throws DataAccessException {
+        User user =  authHelper.getUserFromAuth(auth);
+        if(user != null){
+            if(!boardService.userHasBoard(user.getId(), element.getBoardId())){
+                return new ResponseEntity<>("Board does not belong to user",HttpStatus.FORBIDDEN);
+            }
+        }
+        Result<BoardElement> result = service.updateByClientId(element);
+        if (!result.isSuccess()) {
+            return ErrorResponse.build(result);
+        }
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/delete/{boardId}")
     public ResponseEntity<?> deleteAll(@PathVariable long boardId, Authentication auth) throws DataAccessException {
         Board existingBoard = boardService.findById(boardId);

@@ -16,6 +16,8 @@ create table board(
 	name varchar(50) not null,
 	created_at timestamp not null,
 	updated_at timestamp not null,
+	is_trashed boolean not null default false,
+	trashed_at timestamp,
 	
 	constraint fk_board_user
 		foreign key(owner_id)
@@ -51,7 +53,10 @@ create table room(
 	constraint room_board
 		foreign key(board_id)
 		references board(board_id)
+		on delete cascade
 );
+
+
 
 create table board_member(
 	id bigint primary key auto_increment,
