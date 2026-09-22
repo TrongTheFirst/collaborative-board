@@ -109,8 +109,8 @@ public class BoardGeminiAgentService {
                 Object elementsRaw = args.get("elements");
                 if (!(elementsRaw instanceof List<?> elements)) continue;
 
-                for (Object el : elements) {
-                    if (el instanceof Map<?, ?> spec) {
+                for (Object elem : elements) {
+                    if (elem instanceof Map<?, ?> spec) {
                         if (addOneElement(boardId, spec)) added++;
                         else failed++;
                     }

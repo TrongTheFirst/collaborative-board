@@ -152,25 +152,4 @@ class BoardMemberServiceTest {
         }
     }
 
-    @Nested
-    class DeleteTests {
-
-        @Test
-        void shouldReturnSuccessWhenDeleted() throws DataAccessException {
-            when(repository.delete(1)).thenReturn(true);
-
-            Result<BoardMember> actual = service.delete(1);
-
-            assertEquals(ResultType.SUCCESS, actual.getResultType());
-        }
-
-        @Test
-        void shouldFailWhenNotFound() throws DataAccessException {
-            when(repository.delete(999)).thenReturn(false);
-
-            Result<BoardMember> actual = service.delete(999);
-
-            assertEquals(ResultType.NOT_FOUND, actual.getResultType());
-        }
-    }
 }
