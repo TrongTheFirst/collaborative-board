@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Send, Loader2, Bot } from "lucide-react";
 import { useBoard } from "../contexts/BoardContext.jsx";
+import {useAuth} from "../contexts/AuthContext.jsx";
 
 function AgentChatPanel({ onClose, messages, setMessages, lastClicked }) {
     const { boardId, fetchBoardElements } = useBoard();
+    const { BASE_URL } = useAuth();
     const [input, setInput] = useState("");
     const [posX, setPosX] = useState(100);
     const [posY, setPosY] = useState(100);
@@ -39,7 +41,7 @@ function AgentChatPanel({ onClose, messages, setMessages, lastClicked }) {
         }
 
         try {
-            const res = await fetch("http://localhost:8080/api/agent/draw", {
+            const res = await fetch(BASE_URL+"/agent/draw", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
