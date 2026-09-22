@@ -286,6 +286,11 @@ function Board(){
                 elementData
             };
 
+            if (!boardId) {
+                showNotif("Board is still loading, try again in a moment");
+                return;
+            }
+
             if(activeToolRef.current === "select") {
                 if(inSession()){
                     sendUpdate(boardElement);
@@ -457,6 +462,12 @@ function Board(){
         const isEditing = !!box?.clientId;
         const {type, ...elementData} = drawing;
         const boardElement = { elementId: 0, boardId, type, elementData };
+
+        if (!boardId) {
+            showNotif("Board is still loading, try again in a moment");
+            return;
+        }
+
         if (isEditing) {
             if (inSession()) {
                 sendUpdate(boardElement);
