@@ -2,7 +2,6 @@ export const PENCIL_STYLE = {
     roughness: 0,
     strokeColor: "#000000",
     strokeWidth: 2,
-    seed: Math.floor(Math.random() * 2 ** 31),
     simplification: 0.6,
 };
 

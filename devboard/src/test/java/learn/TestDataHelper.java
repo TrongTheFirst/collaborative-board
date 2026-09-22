@@ -15,7 +15,7 @@ public class TestDataHelper {
     }
 
     public static Board existingBoard() {
-        return new Board(1,1,"B1",testTime, testTime);
+        return new Board(1,1,"B1",testTime, testTime, false, null);
     }
 
     public static User userToCreate() {
@@ -29,7 +29,7 @@ public class TestDataHelper {
     }
 
     public static Board boardToCreate() {
-        return new Board(0,1,"B2",testTime, testTime);
+        return new Board(0,1,"B2",testTime, testTime, false, null);
     }
 
     public static Board boardAfterCreate() {
@@ -56,19 +56,19 @@ public class TestDataHelper {
     }
 
     public static Room existingRoom() {
-        return new Room("ABC123", 1, "test-host-client-id", testTime);
+        return new Room("ABC123", 1, "test-host-client-id", testTime, false);
     }
 
     public static Room roomToCreate() {
-        return new Room("XYZ789", 1, "test-host-client-id", testTime);
+        return new Room("XYZ789", 1, "test-host-client-id", testTime, false);
     }
 
     public static BoardMember existingBoardMember() {
-        return new BoardMember(1, 1, "a", "ABC123", 1, testTime);
+        return new BoardMember(1, "clientId", "a", "ABC123", 1, testTime);
     }
 
     public static BoardMember boardMemberToCreate() {
-        return new BoardMember(0, 2, "b", "ABC123", 1, testTime);
+        return new BoardMember(0, "clientId", "b", "ABC123", 1, testTime);
     }
 
     public static BoardMember boardMemberAfterCreate() {

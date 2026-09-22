@@ -339,6 +339,7 @@ export function BoardProvider({ children }) {
                 setBoardState,
                 setBoardDrawings,
                 updateBoardDrawings,
+                fetchBoardElements,
                 addDrawing,
                 updateDrawing,
                 clearDrawings,

@@ -36,7 +36,7 @@ class RoomServiceTest {
         void shouldFailWhenBoardNotFound() throws DataAccessException {
             when(boardRepository.findById(999)).thenReturn(null);
 
-            Result<Room> actual = service.createForBoard(999);
+            Result<Room> actual = service.createForBoard(999L,"hostid",(long)10);
 
             assertEquals(ResultType.NOT_FOUND, actual.getResultType());
             assertTrue(actual.getErrorMessages().contains("Board 999 was not found"));
@@ -52,7 +52,7 @@ class RoomServiceTest {
             when(repository.findByRoomCode(anyString())).thenReturn(null);
             when(repository.create(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-            Result<Room> actual = service.createForBoard(existingBoard.getBoardId());
+            Result<Room> actual = service.createForBoard(existingBoard.getBoardId(),"hostid",(long)10);
 
             assertEquals(ResultType.SUCCESS, actual.getResultType());
             assertEquals(existingBoard.getBoardId(), actual.getPayload().getBoardId());
@@ -74,7 +74,7 @@ class RoomServiceTest {
                     .thenReturn(null);
             when(repository.create(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-            Result<Room> actual = service.createForBoard(existingBoard.getBoardId());
+            Result<Room> actual = service.createForBoard(existingBoard.getBoardId(),"hostid",(long)10);
 
             assertEquals(ResultType.SUCCESS, actual.getResultType());
             verify(repository, times(2)).findByRoomCode(anyString());
@@ -90,7 +90,7 @@ class RoomServiceTest {
             // every generated code collides
             when(repository.findByRoomCode(anyString())).thenReturn(collidingRoom);
 
-            Result<Room> actual = service.createForBoard(existingBoard.getBoardId());
+            Result<Room> actual = service.createForBoard(existingBoard.getBoardId(),"hostid",(long)10);
 
             assertEquals(ResultType.INVALID, actual.getResultType());
             assertTrue(actual.getErrorMessages().contains(
@@ -108,7 +108,7 @@ class RoomServiceTest {
             when(repository.findByRoomCode(anyString())).thenReturn(null);
             when(repository.create(any())).thenReturn(null);
 
-            Result<Room> actual = service.createForBoard(existingBoard.getBoardId());
+            Result<Room> actual = service.createForBoard(existingBoard.getBoardId(),"hostid",(long)10);
 
             assertEquals(ResultType.INVALID, actual.getResultType());
             assertTrue(actual.getErrorMessages().contains("Room could not be created"));

@@ -35,6 +35,7 @@ function Board(){
     const [errors, setErrors] = useState(null);
     const [zoomPercent, setZoomPercent] = useState(100);
     const [hoveredText, setHoveredText] = useState(null);
+    const [lastClickedPosition, setLastClickedPosition] = useState({ x: 0, y: 0 });
 
     const { showNotif } = useNotif();
     const {sendDrawing, sendUpdate, sendErase, inSession, connectToRoom, isHost, viewMode} = useSession();
@@ -57,6 +58,7 @@ function Board(){
     const zoomActions = useRef({});
     const selectedElement = useRef(null);
     const lastPointerPosition = useRef({ x: 0, y: 0 });
+
 
 
     function clearCanvas(){
@@ -254,6 +256,7 @@ function Board(){
             canvas.setPointerCapture(e.pointerId);
             const offset = activeToolRef.current === "hand" ? e : toOffset(e);
             getActiveTool().onPointerDown(offset);
+            setLastClickedPosition({x: offset.clientX, y: offset.clientY});
         };
 
         const handlePointerMove = (e) => {
@@ -502,6 +505,7 @@ function Board(){
                             setOpenCollabEndModal={setOpenCollabEndModal}
                             setOpenLoginModal={setOpenLoginModal}
                             setOpenCreateModal={setOpenCreateModal}
+                            lastClicked={lastClickedPosition}
                 />
             </div>
             <NotificationBanner />
