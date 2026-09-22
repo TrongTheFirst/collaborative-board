@@ -3,7 +3,7 @@ import { useNotif } from "./NotificationContext.jsx";
 
 const AuthContext = createContext(null);
 
-const BASE_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = import.meta.env.VITE_API_URL+"/api";
 export function AuthProvider({ children }) {
     const { showNotif } = useNotif();
     const [token, setToken] = useState(() => localStorage.getItem("token"));
