@@ -30,7 +30,7 @@ export function SessionProvider({children}) {
 
     if(!stompClient.current) {
         stompClient.current = new Client({
-            brokerURL: "ws://localhost:8080/ws",
+            brokerURL: import.meta.env.VITE_WS_URL + "/ws",
             connectHeaders: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
